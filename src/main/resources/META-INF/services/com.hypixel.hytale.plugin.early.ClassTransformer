@@ -1,0 +1,3 @@
+com.criticalrange.transformer.TickOptimizationTransformer
+com.criticalrange.transformer.EntityTrackerTransformer
+com.criticalrange.transformer.ChunkCacheTransformer

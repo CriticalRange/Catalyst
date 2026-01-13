@@ -73,6 +73,52 @@ def assetsPath = hytaleBaseDir + "/" + patchline + "/package/game/latest/Assets.
 dependencies {
     testImplementation 'org.junit.jupiter:junit-jupiter:5.10.0'
     implementation files(hytaleServerPath)
+    
+    // ASM for bytecode manipulation (Early Plugin class transformation)
+    implementation 'org.ow2.asm:asm:9.7'
+    implementation 'org.ow2.asm:asm-commons:9.7'
+    implementation 'org.ow2.asm:asm-util:9.7'
+    implementation 'org.ow2.asm:asm-tree:9.7'
+}
+
+// Configure JAR to include ASM dependencies (shade them)
+jar {
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    from {
+        configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
+    } {
+        exclude 'META-INF/*.SF'
+        exclude 'META-INF/*.DSA'
+        exclude 'META-INF/*.RSA'
+        exclude 'META-INF/MANIFEST.MF'
+        // Don't include HytaleServer classes
+        exclude 'com/hypixel/**'
+    }
+}
+
+// Task to deploy to early-plugins directory (for class transformers)
+task deployEarlyPlugin(type: Copy) {
+    group = 'Hytale'
+    description = 'Deploys the mod to the early-plugins directory for bytecode transformation'
+    dependsOn jar
+    
+    def earlyPluginsDir = file("${hytaleBaseDir}/early-plugins")
+    
+    from jar.archiveFile
+    into earlyPluginsDir
+    
+    doFirst {
+        if (!earlyPluginsDir.exists()) {
+            earlyPluginsDir.mkdirs()
+        }
+        logger.lifecycle("Deploying early plugin to: ${earlyPluginsDir}")
+        logger.lifecycle("WARNING: Early plugins have full system access!")
+    }
+    
+    doLast {
+        logger.lifecycle("Early plugin deployed successfully!")
+        logger.lifecycle("Restart the Hytale server to apply class transformations.")
+    }
 }
 
 test {
