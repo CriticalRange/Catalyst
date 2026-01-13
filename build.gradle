@@ -1,0 +1,560 @@
+plugins {
+    id 'java'
+    id 'maven-publish'
+    id 'org.jetbrains.gradle.plugin.idea-ext' version '1.3'
+}
+
+java {
+    toolchain.languageVersion = JavaLanguageVersion.of(java_version)
+    withSourcesJar()
+    withJavadocJar()
+}
+
+// Configure javadoc and sources JARs to output to build/docs instead of build/libs
+tasks.named('sourcesJar') {
+    destinationDirectory.set(file("${project.layout.buildDirectory.asFile.get()}/docs"))
+}
+tasks.named('javadocJar') {
+    destinationDirectory.set(file("${project.layout.buildDirectory.asFile.get()}/docs"))
+}
+
+repositories {
+    mavenCentral()
+}
+
+// Import for OS detection
+import org.gradle.nativeplatform.platform.internal.DefaultNativePlatform
+
+// Get current OS
+def os = DefaultNativePlatform.currentOperatingSystem
+
+// Determine base Hytale installation directory
+def getHytaleBaseDir() {
+    // If hytaleHome is explicitly set in gradle.properties and it's an absolute path, use it
+    if (project.hasProperty('hytaleHome') && hytaleHome != null && !hytaleHome.startsWith('$')) {
+        return hytaleHome
+    }
+
+    // Otherwise, use OS defaults with auto-detection
+    def currentOs = DefaultNativePlatform.currentOperatingSystem
+    def userHome = System.properties['user.home']
+
+    if (currentOs.isLinux()) {
+        // Try Flatpak installation first (common on Linux)
+        def flatpakPath = new File(userHome, ".var/app/com.hypixel.HytaleLauncher/data/Hytale/install")
+        if (flatpakPath.exists()) {
+            return flatpakPath.absolutePath
+        }
+
+        // Fallback to standard Linux: ~/.local/share/Hytale/install
+        def standardPath = new File(userHome, ".local/share/Hytale/install")
+        if (standardPath.exists()) {
+            return standardPath.absolutePath
+        }
+
+        // If neither exists, return the standard path (will fail later if Hytale not installed)
+        return standardPath.absolutePath
+    } else if (currentOs.isWindows()) {
+        // Windows: %APPDATA%\Hytale\install
+        def appData = System.getenv('APPDATA')
+        return new File(appData, "Hytale\\install").absolutePath
+    } else if (currentOs.isMacOsX()) {
+        // macOS: ~/Library/Application Support/Hytale/install
+        return new File(userHome, "Library/Application Support/Hytale/install").absolutePath
+    } else {
+        throw new GradleException("Unsupported operating system: " + currentOs.displayName)
+    }
+}
+
+def hytaleBaseDir = getHytaleBaseDir()
+def hytaleServerPath = hytaleBaseDir + "/release/package/game/" + game_build + "/Server/HytaleServer.jar"
+def assetsPath = hytaleBaseDir + "/" + patchline + "/package/game/latest/Assets.zip"
+
+dependencies {
+    testImplementation 'org.junit.jupiter:junit-jupiter:5.10.0'
+    implementation files(hytaleServerPath)
+}
+
+test {
+    useJUnitPlatform()
+}
+
+processResources {
+    def expandProps = [
+            'name'         : project.name,
+            'version'      : project.version,
+            'group'        : project.group,
+            'description'  : mod_description,
+            'website'      : website,
+            'server_version': server_version,
+            'entry_point'  : entry_point
+    ]
+    filesMatching('manifest.json') {
+        expand expandProps
+    }
+    inputs.properties(expandProps)
+}
+
+// Enhanced clean task to also remove mod JARs from Hytale directories
+clean.doFirst {
+    def systemModsDir = file("${hytaleBaseDir}/mods")
+    def hytaleDataDir = file("${hytaleBaseDir}/..").getCanonicalFile()
+    def userDataModsDir = file("${hytaleDataDir}/UserData/Mods")
+    def runModsDir = file("$projectDir/run/mods")
+    def runUserDataModsDir = file("$projectDir/run/UserData/Mods")
+
+    // Remove from system mods directory
+    def systemMod = file("${systemModsDir}/${project.name}-${version}.jar")
+    if (systemMod.exists()) {
+        delete systemMod
+        logger.lifecycle("Removed mod from system mods: ${systemMod}")
+    }
+
+    // Remove from UserData/Mods
+    def userDataMod = file("${userDataModsDir}/${project.name}-${version}.jar")
+    if (userDataMod.exists()) {
+        delete userDataMod
+        logger.lifecycle("Removed mod from UserData/Mods: ${userDataMod}")
+    }
+
+    // Remove from run/mods
+    def runMod = file("${runModsDir}/${project.name}-${version}.jar")
+    if (runMod.exists()) {
+        delete runMod
+        logger.lifecycle("Removed mod from run/mods: ${runMod}")
+    }
+
+    // Remove from run/UserData/Mods
+    def runUserDataMod = file("${runUserDataModsDir}/${project.name}-${version}.jar")
+    if (runUserDataMod.exists()) {
+        delete runUserDataMod
+        logger.lifecycle("Removed mod from run/UserData/Mods: ${runUserDataMod}")
+    }
+}
+
+// Task to copy the built mod JAR to the Hytale mods directory
+task copyMod(type: Copy) {
+    group = 'Hytale'
+    description = 'Copies the built mod JAR to the Hytale mods directory'
+    dependsOn jar
+    from jar.archiveFile
+    into file("${hytaleBaseDir}/mods")
+    doFirst {
+        logger.lifecycle("Copying mod to: ${hytaleBaseDir}/mods/")
+    }
+}
+
+// Task to copy the built mod JAR to the official mods directory
+task copyJar(type: Copy) {
+    group = 'Hytale'
+    description = 'Copies the built mod JAR to the official Hytale mods directory'
+    dependsOn jar
+    from jar.archiveFile
+    into file("${hytaleBaseDir}/mods")
+    doFirst {
+        logger.lifecycle("Copying mod JAR to official mods directory: ${hytaleBaseDir}/mods/")
+    }
+}
+
+// Task to download/copy Assets.zip locally for offline development
+task downloadAssets(type: Copy) {
+    group = 'Hytale'
+    description = 'Copies Assets.zip locally for offline development'
+    from assetsPath
+    into file("$projectDir/run")
+    doFirst {
+        logger.lifecycle("Copying Assets.zip to: ${projectDir}/run/")
+    }
+}
+
+// Task to copy mod to UserData/Mods for client testing via launcher
+task copyModToClient(type: Copy) {
+    group = 'Hytale'
+    description = 'Copies the built mod to UserData/Mods for testing through the official launcher'
+    dependsOn jar
+
+    def hytaleDataDir = file("${hytaleBaseDir}/..").getCanonicalFile()
+    def userDataModsDir = file("${hytaleDataDir}/UserData/Mods")
+
+    from jar.archiveFile
+    into userDataModsDir
+
+    doFirst {
+        if (!userDataModsDir.exists()) {
+            userDataModsDir.mkdirs()
+        }
+        logger.lifecycle("Copying mod to UserData/Mods: ${userDataModsDir}")
+        logger.lifecycle("INFO: Launch the client through the official Hytale launcher to test")
+    }
+}
+
+// Task to run the Hytale client via official launcher
+task runServer(type: JavaExec) {
+    group = 'Hytale'
+    description = 'Starts the Hytale server with the mod loaded for testing'
+    dependsOn jar
+
+    mainClass = 'com.hypixel.hytale.Main'
+    classpath = files(hytaleServerPath)
+
+    def runDir = file("$projectDir/run")
+    def runModsDir = file("$projectDir/run/mods")
+    workingDir = runDir
+    standardInput = System.in
+
+    doFirst {
+        logger.lifecycle("Starting Hytale server...")
+        logger.lifecycle("Working directory: ${runDir}")
+        logger.lifecycle("Mods directory: ${runModsDir}")
+        logger.lifecycle("OS: ${os.displayName}")
+        logger.lifecycle("Hytale installation: ${hytaleBaseDir}")
+    }
+
+    args = [
+        "--allow-op",
+        "--disable-sentry",
+        "--assets=${assetsPath}",
+        "--auth-mode=insecure"
+    ]
+
+    jvmArgs = ["-Xmx2G", "-Xms1G"]
+}
+
+// Task to run the Hytale client via official launcher
+task runClient(type: Exec) {
+    group = 'Hytale'
+    description = 'Starts the Hytale client via official launcher'
+    dependsOn jar, copyModToClient
+
+    doFirst {
+        logger.lifecycle("Mod has been copied to UserData/Mods for singleplayer testing")
+        logger.lifecycle("")
+        logger.lifecycle("Starting Hytale launcher...")
+        logger.lifecycle("")
+
+        if (os.isLinux()) {
+            // Try flatpak first
+            def flatpakLauncher = file("/usr/bin/flatpak")
+            if (flatpakLauncher.exists()) {
+                logger.lifecycle("Using Flatpak: com.hypixel.HytaleLauncher")
+                logger.lifecycle("")
+                logger.lifecycle("To test your mod:")
+                logger.lifecycle("  1. Use the launcher to start the game")
+                logger.lifecycle("  2. Create a singleplayer world (mods load from embedded server)")
+                logger.lifecycle("  3. Or connect to your local server running ./gradlew runServer")
+
+                commandLine flatpakLauncher, 'run', 'com.hypixel.HytaleLauncher'
+                return
+            }
+
+            // Fallback to regular launcher
+            def regularLauncher = file("${hytaleBaseDir}/../HytaleLauncher")
+            if (regularLauncher.exists()) {
+                logger.lifecycle("Using launcher: ${regularLauncher}")
+                logger.lifecycle("")
+                logger.lifecycle("To test your mod:")
+                logger.lifecycle("  1. Use the launcher to start the game")
+                logger.lifecycle("  2. Create a singleplayer world (mods load from embedded server)")
+                logger.lifecycle("  3. Or connect to your local server running ./gradlew runServer")
+
+                commandLine regularLauncher
+                return
+            }
+
+            throw new GradleException("""
+HytaleLauncher not found!
+
+Searched in:
+  - /usr/bin/flatpak
+  - ${hytaleBaseDir}/../HytaleLauncher
+
+Please ensure Hytale is installed and the launcher path is correct.
+You can override the path by setting 'hytaleHome' in gradle.properties.
+""")
+        } else if (os.isWindows()) {
+            def launcherPath = file("${hytaleBaseDir}/../HytaleLauncher.exe")
+            if (!launcherPath.exists()) {
+                throw new GradleException("HytaleLauncher not found at: ${launcherPath}")
+            }
+            commandLine 'cmd', '/c', launcherPath
+        } else if (os.isMacOsX()) {
+            def launcherPath = file("${hytaleBaseDir}/../HytaleLauncher.app/Contents/MacOS/HytaleLauncher")
+            if (!launcherPath.exists()) {
+                throw new GradleException("HytaleLauncher not found at: ${launcherPath}")
+            }
+            commandLine launcherPath
+        }
+    }
+}
+
+// ============================================================================
+// IDE Run Configuration Generation
+// ============================================================================
+
+// IntelliJ IDEA run configurations
+idea.project.settings.runConfigurations {
+    'HytaleServer'(org.jetbrains.gradle.ext.Application) {
+        mainClass = 'com.hypixel.hytale.Main'
+        moduleName = project.name + '.main'
+        programParameters = "--allow-op --disable-sentry --assets=${assetsPath} --auth-mode=insecure"
+        workingDirectory = file("$projectDir/run").absolutePath
+        jvmArgs = ["-Xmx2G", "-Xms1G"]
+
+        // Set before launch tasks
+        beforeRun {
+            build
+        }
+    }
+}
+
+// VSCode launch configuration generation
+task vscode {
+    group = 'IDE'
+    description = 'Generates .vscode/launch.json and tasks.json for VSCode debugging'
+
+    def vscodeDir = file("$projectDir/.vscode")
+    def launchJson = file("$vscodeDir/launch.json")
+    def tasksJson = file("$vscodeDir/tasks.json")
+
+    inputs.property 'projectName', project.name
+    inputs.property 'projectDir', projectDir
+    inputs.property 'hytaleBaseDir', hytaleBaseDir
+    outputs.file launchJson
+    outputs.file tasksJson
+
+    doLast {
+        if (!vscodeDir.exists()) {
+            vscodeDir.mkdirs()
+        }
+
+        // Generate launch.json
+        def serverJar = file("${hytaleBaseDir}/release/package/game/${game_build}/Server/HytaleServer.jar").absolutePath
+        def runDir = file("$projectDir/run").absolutePath
+        def modsPath = file("$projectDir/run/mods").absolutePath
+        def assetsPathStr = assetsPath.toString()
+
+        def launchConfig = [
+            version: "0.2.0",
+            configurations: [
+                [
+                    type: "java",
+                    name: "runServer Debug",
+                    request: "launch",
+                    mainClass: "com.hypixel.hytale.Main",
+                    workingDirectory: runDir,
+                    classPaths: [serverJar],
+                    args: [
+                        "--allow-op",
+                        "--disable-sentry",
+                        "--assets=${assetsPathStr}",
+                        "--auth-mode=insecure"
+                    ],
+                    vmArgs: "-Xmx2G -Xms1G",
+                    preLaunchTask: "gradle: build"
+                ],
+                [
+                    type: "java",
+                    name: "runServer Release",
+                    request: "launch",
+                    mainClass: "com.hypixel.hytale.Main",
+                    workingDirectory: runDir,
+                    classPaths: [serverJar],
+                    args: [
+                        "--allow-op",
+                        "--disable-sentry",
+                        "--assets=${assetsPathStr}",
+                        "--auth-mode=insecure"
+                    ],
+                    vmArgs: "-Xmx2G -Xms1G",
+                    preLaunchTask: "gradle: build"
+                ]
+            ]
+        ]
+
+        launchJson.text = groovy.json.JsonOutput.prettyPrint(groovy.json.JsonOutput.toJson(launchConfig))
+        logger.lifecycle("Generated VSCode launch configuration: ${launchJson}")
+
+        // Generate tasks.json manually to avoid empty arrays
+        def tasksJsonContent = """{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "gradle: build",
+            "type": "shell",
+            "command": "./gradlew build",
+            "options": {
+                "cwd": "${projectDir.absolutePath.replace('\\', '/')}"
+            },
+            "windows": {
+                "command": "gradlew.bat",
+                "args": ["build"]
+            },
+            "group": "build",
+            "detail": "Builds the project with Gradle",
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared",
+                "clear": true
+            }
+        },
+        {
+            "label": "gradle: copyMod",
+            "type": "shell",
+            "command": "./gradlew copyMod",
+            "options": {
+                "cwd": "${projectDir.absolutePath.replace('\\', '/')}"
+            },
+            "windows": {
+                "command": "gradlew.bat",
+                "args": ["copyMod"]
+            },
+            "group": "build",
+            "detail": "Copies the built mod to Hytale mods directory",
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared",
+                "clear": true
+            }
+        },
+        {
+            "label": "gradle: runServer",
+            "type": "shell",
+            "command": "./gradlew runServer",
+            "options": {
+                "cwd": "${projectDir.absolutePath.replace('\\', '/')}"
+            },
+            "windows": {
+                "command": "gradlew.bat",
+                "args": ["runServer"]
+            },
+            "group": "build",
+            "detail": "Starts the Hytale server with the mod loaded",
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared",
+                "clear": false
+            }
+        },
+        {
+            "label": "gradle: runClient",
+            "type": "shell",
+            "command": "./gradlew runClient",
+            "options": {
+                "cwd": "${projectDir.absolutePath.replace('\\', '/')}"
+            },
+            "windows": {
+                "command": "gradlew.bat",
+                "args": ["runClient"]
+            },
+            "group": "build",
+            "detail": "Shows instructions for running the client via official launcher",
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared",
+                "clear": false
+            }
+        }
+    ]
+}"""
+
+        tasksJson.text = tasksJsonContent
+        logger.lifecycle("Generated VSCode tasks configuration: ${tasksJson}")
+
+        // Generate extensions.json to recommend required extensions
+        def extensionsJson = file("$vscodeDir/extensions.json")
+        def extensionsConfig = [
+            recommendations: [
+                "vscjava.vscode-java-pack",
+                "redhat.java",
+                "vscjava.vscode-gradle"
+            ]
+        ]
+        extensionsJson.text = groovy.json.JsonOutput.prettyPrint(groovy.json.JsonOutput.toJson(extensionsConfig))
+        logger.lifecycle("Generated VSCode extensions recommendations: ${extensionsJson}")
+    }
+}
+
+// Eclipse launch configuration generation
+task eclipse {
+    group = 'IDE'
+    description = 'Generates Eclipse launch configuration for Hytale Server'
+
+    def eclipseLaunchDir = file("$projectDir/.eclipse/launch")
+    def launchFile = file("$eclipseLaunchDir/HytaleServer.launch")
+
+    inputs.property 'projectName', project.name
+    inputs.property 'projectDir', projectDir
+    inputs.property 'hytaleBaseDir', hytaleBaseDir
+    outputs.file launchFile
+
+    doLast {
+        if (!eclipseLaunchDir.exists()) {
+            eclipseLaunchDir.mkdirs()
+        }
+
+        def serverJar = file("${hytaleBaseDir}/release/package/game/${game_build}/Server/HytaleServer.jar").absolutePath.replace('\\', '/')
+        def runDir = file("$projectDir/run").absolutePath
+        def assetsPathStr = assetsPath.toString()
+        def modsPathStr = file("$projectDir/run/mods").absolutePath
+
+        def launchConfig = """<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<launchConfiguration type="org.eclipse.jdt.launching.localJavaApplication">
+    <listAttribute key="org.eclipse.debug.core.MAPPED_RESOURCE_PATHS">
+        <listEntry value="/${project.name}"/>
+    </listAttribute>
+    <listAttribute key="org.eclipse.debug.core.MAPPED_RESOURCE_TYPES">
+        <listEntry value="4"/>
+    </listAttribute>
+    <booleanAttribute key="org.eclipse.debug.core.ATTR_FORCE_CONSOLE_PORT" value="false"/>
+    <stringAttribute key="org.eclipse.jdt.launching.MAIN_TYPE" value="com.hypixel.hytale.Main"/>
+    <stringAttribute key="org.eclipse.jdt.launching.PROGRAM_ARGUMENTS" value="--allow-op --disable-sentry --assets=${assetsPathStr} --auth-mode=insecure"/>
+    <stringAttribute key="org.eclipse.jdt.launching.VM_ARGUMENTS" value="-Xmx2G -Xms1G"/>
+    <stringAttribute key="org.eclipse.jdt.launching.WORKING_DIRECTORY" value="${runDir}"/>
+</launchConfiguration>
+"""
+
+        launchFile.text = launchConfig
+        logger.lifecycle("Generated Eclipse launch configuration: ${launchFile}")
+    }
+}
+
+// Task to generate all IDE configurations
+task ide {
+    group = 'IDE'
+    description = 'Generates run configurations for all supported IDEs (VSCode, Eclipse, IntelliJ)'
+    dependsOn vscode, eclipse
+}
+
+// Publishing configuration
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            artifactId = project.name
+            from components.java
+
+            pom {
+                name = project.name
+                description = mod_description
+                url = website
+
+                developers {
+                    developer {
+                        id = 'hytalemodding'
+                        name = 'Your Name'
+                    }
+                }
+            }
+        }
+    }
+    repositories {
+        mavenLocal()
+    }
+}
