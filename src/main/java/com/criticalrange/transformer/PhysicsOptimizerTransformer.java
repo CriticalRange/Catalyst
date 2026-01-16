@@ -3,44 +3,42 @@ package com.criticalrange.transformer;
 import org.objectweb.asm.*;
 
 /**
- * Chunk Loading Metrics Transformer
+ * Physics Optimization Transformer
  *
- * Injects simple counters into chunk operations.
+ * Injects simple counters into physics systems.
  * Uses inline bytecode to avoid external class dependencies.
  */
-public class ChunkCacheTransformer extends BaseTransformer {
+public class PhysicsOptimizerTransformer extends BaseTransformer {
 
     private static final boolean DEBUG = true;
 
     @Override
     public String getName() {
-        return "ChunkCache";
+        return "PhysicsOptimization";
     }
 
     @Override
     public int priority() {
-        return 0;
+        return -100;
     }
 
     @Override
     protected boolean shouldTransform(String className) {
-        return className.equals("com.hypixel.hytale.server.core.universe.world.storage.provider.IndexedStorageChunkStorageProvider$IndexedStorageChunkLoader") ||
-               className.equals("com.hypixel.hytale.server.core.universe.world.storage.provider.IndexedStorageChunkStorageProvider$IndexedStorageChunkSaver") ||
-               className.equals("com.hypixel.hytale.server.core.universe.world.storage.BufferChunkLoader") ||
-               className.equals("com.hypixel.hytale.server.core.universe.world.storage.BufferChunkSaver");
+        return className.equals("com.hypixel.hytale.server.core.modules.entity.item.ItemPhysicsSystem") ||
+               className.equals("com.hypixel.hytale.server.core.modules.entity.repulsion.RepulsionSystems$RepulsionTicker");
     }
 
     @Override
     protected ClassVisitor createClassVisitor(ClassWriter classWriter, String className) {
-        return new ChunkCacheClassVisitor(classWriter, className);
+        return new PhysicsClassVisitor(classWriter, className);
     }
 
-    private static class ChunkCacheClassVisitor extends ClassVisitor {
+    private static class PhysicsClassVisitor extends ClassVisitor {
 
         private final String className;
         private final String fieldName;
 
-        public ChunkCacheClassVisitor(ClassWriter classWriter, String className) {
+        public PhysicsClassVisitor(ClassWriter classWriter, String className) {
             super(ASM_VERSION, classWriter);
             this.className = className;
             this.fieldName = "catalyst$" + className.replace('.', '_').replace('$', '_') + "$count";
@@ -60,22 +58,22 @@ public class ChunkCacheTransformer extends BaseTransformer {
                                          String signature, String[] exceptions) {
             MethodVisitor mv = super.visitMethod(access, name, descriptor, signature, exceptions);
 
-            if (name.equals("loadBuffer") || name.equals("saveBuffer") || name.equals("removeBuffer")) {
+            if (name.equals("tick") && descriptor.startsWith("(FI")) {
                 if (DEBUG) {
-                    System.out.println("[Catalyst:ChunkCache] Injecting counter into " + className + "." + name);
+                    System.out.println("[Catalyst:Physics] Injecting counter into " + className);
                 }
-                return new ChunkMethodVisitor(mv, className, fieldName);
+                return new PhysicsMethodVisitor(mv, className, fieldName);
             }
 
             return mv;
         }
     }
 
-    private static class ChunkMethodVisitor extends MethodVisitor {
+    private static class PhysicsMethodVisitor extends MethodVisitor {
         private final String className;
         private final String fieldName;
 
-        public ChunkMethodVisitor(MethodVisitor mv, String className, String fieldName) {
+        public PhysicsMethodVisitor(MethodVisitor mv, String className, String fieldName) {
             super(ASM_VERSION, mv);
             this.className = className;
             this.fieldName = fieldName;

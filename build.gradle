@@ -67,7 +67,7 @@ def getHytaleBaseDir() {
 }
 
 def hytaleBaseDir = getHytaleBaseDir()
-def hytaleServerPath = hytaleBaseDir + "/release/package/game/" + game_build + "/Server/HytaleServer.jar"
+def hytaleServerPath = hytaleBaseDir + "/" + patchline + "/package/game/" + game_build + "/Server/HytaleServer.jar"
 def assetsPath = hytaleBaseDir + "/" + patchline + "/package/game/latest/Assets.zip"
 
 dependencies {
@@ -91,33 +91,45 @@ jar {
         exclude 'META-INF/*.DSA'
         exclude 'META-INF/*.RSA'
         exclude 'META-INF/MANIFEST.MF'
-        // Don't include HytaleServer classes
+        // Don't include HytaleServer classes or manifests
         exclude 'com/hypixel/**'
+        exclude 'manifests.json'
     }
 }
 
 // Task to deploy to early-plugins directory (for class transformers)
 task deployEarlyPlugin(type: Copy) {
     group = 'Hytale'
-    description = 'Deploys the mod to the early-plugins directory for bytecode transformation'
+    description = 'Deploys the mod to earlyplugins (transformers) AND mods (commands) directories'
     dependsOn jar
-    
-    def earlyPluginsDir = file("${hytaleBaseDir}/early-plugins")
-    
+
+    // Note: Hytale uses "earlyplugins" (no hyphen) as the default directory
+    def earlyPluginsDir = file("${hytaleBaseDir}/earlyplugins")
+    def modsDir = file("${hytaleBaseDir}/mods")
+
     from jar.archiveFile
     into earlyPluginsDir
-    
+
     doFirst {
         if (!earlyPluginsDir.exists()) {
             earlyPluginsDir.mkdirs()
         }
-        logger.lifecycle("Deploying early plugin to: ${earlyPluginsDir}")
+        if (!modsDir.exists()) {
+            modsDir.mkdirs()
+        }
+        logger.lifecycle("Deploying Catalyst to: ${earlyPluginsDir} (transformers)")
+        logger.lifecycle("                    AND: ${modsDir} (commands)")
         logger.lifecycle("WARNING: Early plugins have full system access!")
     }
-    
+
     doLast {
-        logger.lifecycle("Early plugin deployed successfully!")
-        logger.lifecycle("Restart the Hytale server to apply class transformations.")
+        // Also copy to mods directory for command registration
+        copy {
+            from jar.archiveFile
+            into modsDir
+        }
+        logger.lifecycle("Catalyst deployed successfully!")
+        logger.lifecycle("Restart the Hytale server to apply changes.")
     }
 }
 
@@ -234,33 +246,53 @@ task copyModToClient(type: Copy) {
     }
 }
 
-// Task to run the Hytale client via official launcher
+// Task to run the Hytale server with early plugins
 task runServer(type: JavaExec) {
     group = 'Hytale'
     description = 'Starts the Hytale server with the mod loaded for testing'
-    dependsOn jar
+    dependsOn jar, deployEarlyPlugin
 
     mainClass = 'com.hypixel.hytale.Main'
     classpath = files(hytaleServerPath)
 
+    // Work from run/ directory so server data (universe/, logs/, etc.) stays separate
     def runDir = file("$projectDir/run")
-    def runModsDir = file("$projectDir/run/mods")
     workingDir = runDir
     standardInput = System.in
 
     doFirst {
+        // Create run directory structure
+        runDir.mkdirs()
+        file("$runDir/earlyplugins").mkdirs()
+        file("$runDir/mods").mkdirs()
+
+        // Copy JAR to both earlyplugins and mods directories
+        def pluginSrc = file("${hytaleBaseDir}/earlyplugins/Catalyst-1.0.0.jar")
+        if (pluginSrc.exists()) {
+            copy {
+                from pluginSrc
+                into file("$runDir/earlyplugins")
+            }
+            copy {
+                from pluginSrc
+                into file("$runDir/mods")
+            }
+        }
+
         logger.lifecycle("Starting Hytale server...")
         logger.lifecycle("Working directory: ${runDir}")
-        logger.lifecycle("Mods directory: ${runModsDir}")
-        logger.lifecycle("OS: ${os.displayName}")
-        logger.lifecycle("Hytale installation: ${hytaleBaseDir}")
+        logger.lifecycle("Early plugins: ${runDir}/earlyplugins/")
+        logger.lifecycle("Mods: ${runDir}/mods/")
+        logger.lifecycle("Server data (universe/, logs/) will be created in ${runDir}")
     }
 
     args = [
         "--allow-op",
         "--disable-sentry",
         "--assets=${assetsPath}",
-        "--auth-mode=insecure"
+        "--auth-mode=authenticated",
+        "--accept-early-plugins",
+        "--early-plugins=earlyplugins"  // Relative to working directory (run/)
     ]
 
     jvmArgs = ["-Xmx2G", "-Xms1G"]
@@ -342,7 +374,7 @@ idea.project.settings.runConfigurations {
     'HytaleServer'(org.jetbrains.gradle.ext.Application) {
         mainClass = 'com.hypixel.hytale.Main'
         moduleName = project.name + '.main'
-        programParameters = "--allow-op --disable-sentry --assets=${assetsPath} --auth-mode=insecure"
+        programParameters = "--allow-op --disable-sentry --assets=${assetsPath} --auth-mode=authenticated"
         workingDirectory = file("$projectDir/run").absolutePath
         jvmArgs = ["-Xmx2G", "-Xms1G"]
 
@@ -393,7 +425,7 @@ task vscode {
                         "--allow-op",
                         "--disable-sentry",
                         "--assets=${assetsPathStr}",
-                        "--auth-mode=insecure"
+                        "--auth-mode=authenticated"
                     ],
                     vmArgs: "-Xmx2G -Xms1G",
                     preLaunchTask: "gradle: build"
@@ -409,7 +441,7 @@ task vscode {
                         "--allow-op",
                         "--disable-sentry",
                         "--assets=${assetsPathStr}",
-                        "--auth-mode=insecure"
+                        "--auth-mode=authenticated"
                     ],
                     vmArgs: "-Xmx2G -Xms1G",
                     preLaunchTask: "gradle: build"
@@ -561,7 +593,7 @@ task eclipse {
     </listAttribute>
     <booleanAttribute key="org.eclipse.debug.core.ATTR_FORCE_CONSOLE_PORT" value="false"/>
     <stringAttribute key="org.eclipse.jdt.launching.MAIN_TYPE" value="com.hypixel.hytale.Main"/>
-    <stringAttribute key="org.eclipse.jdt.launching.PROGRAM_ARGUMENTS" value="--allow-op --disable-sentry --assets=${assetsPathStr} --auth-mode=insecure"/>
+    <stringAttribute key="org.eclipse.jdt.launching.PROGRAM_ARGUMENTS" value="--allow-op --disable-sentry --assets=${assetsPathStr} --auth-mode=authenticated"/>
     <stringAttribute key="org.eclipse.jdt.launching.VM_ARGUMENTS" value="-Xmx2G -Xms1G"/>
     <stringAttribute key="org.eclipse.jdt.launching.WORKING_DIRECTORY" value="${runDir}"/>
 </launchConfiguration>

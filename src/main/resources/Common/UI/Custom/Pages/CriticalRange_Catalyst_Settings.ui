@@ -1,0 +1,139 @@
+$C = "../Common.ui";
+
+$C.@PageOverlay {
+
+  $C.@Container {
+    Anchor: (Width: 700, Height: 750);
+
+    #Title {
+      $C.@Title {
+        @Text = "CATALYT SETTINGS";
+      }
+    }
+
+    #Content {
+      LayoutMode: Top;
+
+      Group {
+        LayoutMode: TopScrolling;
+        Anchor: (Width: 680, Top: 10, Left: 10, Right: 10, Bottom: 10);
+        ScrollbarStyle: $C.@DefaultScrollbarStyle;
+
+        Group #Settings {
+          LayoutMode: Top;
+          Padding: (Bottom: 10);
+
+          Group {
+            LayoutMode: Top;
+            $C.@CheckBoxWithLabel #TickToggle {
+              @Text = "Tick Optimization";
+            }
+            Label {
+              Style: (FontSize: 11, TextColor: #aaaaaaff, Wrap: true);
+              Text: "Reduces entity ticking at distance";
+              Padding: (Left: 5, Top: 2, Bottom: 8);
+            }
+          }
+
+          Group {
+            LayoutMode: Top;
+            $C.@CheckBoxWithLabel #PhysicsToggle {
+              @Text = "Physics Optimization";
+            }
+            Label {
+              Style: (FontSize: 11, TextColor: #aaaaaaff, Wrap: true);
+              Text: "Simplifies collisions and item physics";
+              Padding: (Left: 5, Top: 2, Bottom: 8);
+            }
+          }
+
+          Group {
+            LayoutMode: Top;
+            $C.@CheckBoxWithLabel #AIToggle {
+              @Text = "AI Optimization";
+            }
+            Label {
+              Style: (FontSize: 11, TextColor: #aaaaaaff, Wrap: true);
+              Text: "Throttles NPC pathfinding and logic";
+              Padding: (Left: 5, Top: 2, Bottom: 8);
+            }
+          }
+
+          Group {
+            LayoutMode: Top;
+            $C.@CheckBoxWithLabel #NetworkToggle {
+              @Text = "Network Optimization";
+            }
+            Label {
+              Style: (FontSize: 11, TextColor: #aaaaaaff, Wrap: true);
+              Text: "Batches packets to reduce CPU load";
+              Padding: (Left: 5, Top: 2, Bottom: 8);
+            }
+          }
+
+          Group {
+            LayoutMode: Top;
+            $C.@CheckBoxWithLabel #LightingToggle {
+              @Text = "Lighting Optimization";
+            }
+            Label {
+              Style: (FontSize: 11, TextColor: #aaaaaaff, Wrap: true);
+              Text: "Caches lighting calculations";
+              Padding: (Left: 5, Top: 2, Bottom: 8);
+            }
+          }
+
+          Group {
+            LayoutMode: Top;
+            $C.@CheckBoxWithLabel #MovementToggle {
+              @Text = "Movement Optimization";
+            }
+            Label {
+              Style: (FontSize: 11, TextColor: #aaaaaaff, Wrap: true);
+              Text: "Skips processed movement for distant entities";
+              Padding: (Left: 5, Top: 2, Bottom: 8);
+            }
+          }
+
+          Group {
+            LayoutMode: Top;
+            $C.@CheckBoxWithLabel #LazyToggle {
+              @Text = "Lazy Block Entities";
+            }
+            Label {
+              Style: (FontSize: 11, TextColor: #aaaaaaff, Wrap: true);
+              Text: "Defers block entity creation until accessed (huge chunk load speedup)";
+              Padding: (Left: 5, Top: 2, Bottom: 8);
+            }
+          }
+
+          Group {
+            LayoutMode: Top;
+            $C.@CheckBoxWithLabel #TickLazyToggle {
+              @Text = "Lazy Block Tick Discovery";
+            }
+            Label {
+              Style: (FontSize: 11, TextColor: #aaaaaaff, Wrap: true);
+              Text: "Skips crop/sapling discovery during chunk load (may stop automatic growth in new chunks)";
+              Padding: (Left: 5, Top: 2, Bottom: 8);
+            }
+          }
+
+          Group {
+            LayoutMode: Top;
+            $C.@CheckBoxWithLabel #FluidLazyToggle {
+              @Text = "Lazy Fluid Processing";
+            }
+            Label {
+              Style: (FontSize: 11, TextColor: #aaaaaaff, Wrap: true);
+              Text: "Skips fluid pre-simulation during chunk load (massive speedup, water flows after loading)";
+              Padding: (Left: 5, Top: 2, Bottom: 8);
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+$C.@BackButton {}

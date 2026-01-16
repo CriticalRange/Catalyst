@@ -1,158 +1,210 @@
 package com.criticalrange.util;
 
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Helper class for tick optimization.
  * Called by injected bytecode to determine if an entity should be ticked.
+ * 
+ * This class implements a distributed tick scheduling approach:
+ * - Entities are assigned to "tick groups" based on their index
+ * - Only a subset of groups are processed each server tick
+ * - Under load, more groups are skipped
+ * 
+ * This approach doesn't require knowing entity positions (which would
+ * require complex reflection), but still reduces tick load effectively.
  */
 public class CatalystTickHelper {
     
-    /** Distance in blocks beyond which entities skip ticks */
-    private static final int TICK_DISTANCE = 128; // 8 chunks
+    // ========== Configuration ==========
     
-    /** Distance for reduced tick rate (tick every N ticks) */
-    private static final int REDUCED_TICK_DISTANCE = 64; // 4 chunks
+    /** Number of tick groups to distribute entities across */
+    private static final int TICK_GROUPS = 4;
     
-    /** Current server TPS (updated by monitoring) */
+    /** Under heavy load, only this many groups tick per server tick */
+    private static final int HEAVY_LOAD_GROUPS = 2;
+    
+    /** TPS threshold below which we enable aggressive throttling */
+    private static final double HEAVY_LOAD_TPS_THRESHOLD = 18.0;
+    
+    /** TPS threshold below which we enable maximum throttling */
+    private static final double CRITICAL_LOAD_TPS_THRESHOLD = 15.0;
+    
+    // ========== State ==========
+    
+    /** Current server tick (updated by onServerTick) */
+    private static final AtomicLong serverTickCounter = new AtomicLong(0);
+    
+    /** DoTick batch counter (updated by onDoTick) */
+    private static final AtomicLong doTickCounter = new AtomicLong(0);
+    
+    /** Current server TPS (updated by updateTPS) */
     private static volatile double currentTPS = 20.0;
     
-    /** Tick counter for reduced tick rate calculations */
-    private static final AtomicLong tickCounter = new AtomicLong(0);
+    // ========== Statistics ==========
     
-    /** Stats tracking */
     private static final AtomicLong ticksSkipped = new AtomicLong(0);
     private static final AtomicLong ticksProcessed = new AtomicLong(0);
     
+    // Per-system statistics (simple counters, not per-class breakdown)
+    private static final AtomicLong repulsionSkipped = new AtomicLong(0);
+    private static final AtomicLong movementSkipped = new AtomicLong(0);
+    private static final AtomicLong locationSkipped = new AtomicLong(0);
+    
+    // ========== Optimization Logic ==========
+    
     /**
-     * Determine if an entity tick should proceed.
-     * This is called by injected bytecode at the start of tick methods.
+     * Called by injected code at the start of EntityTickingSystem.doTick().
+     * Tracks that a new batch of entity ticks is starting.
+     */
+    public static void onDoTick() {
+        doTickCounter.incrementAndGet();
+    }
+    
+    /**
+     * Determine if a specific entity tick should proceed.
+     * Uses distributed tick scheduling based on entity index.
      * 
-     * @param entity The entity being ticked (could be any object)
+     * @param index The entity index within the ArchetypeChunk
+     * @param className The system class name (for per-system tuning)
      * @return true if the tick should proceed, false to skip
      */
-    public static boolean shouldTick(Object entity) {
-        if (entity == null) {
-            return true; // Don't interfere with null checks
-        }
-        
-        try {
-            // Get distance to nearest player
-            double distance = getDistanceToNearestPlayer(entity);
-            
-            // Always tick entities close to players
-            if (distance < REDUCED_TICK_DISTANCE) {
-                ticksProcessed.incrementAndGet();
-                return true;
-            }
-            
-            // Skip entities very far from players
-            if (distance > TICK_DISTANCE) {
-                ticksSkipped.incrementAndGet();
-                return false;
-            }
-            
-            // Reduced tick rate for entities in the middle distance
-            // Tick every 2nd tick
-            long currentTick = tickCounter.get();
-            if (currentTick % 2 == 0) {
-                ticksProcessed.incrementAndGet();
-                return true;
-            } else {
-                ticksSkipped.incrementAndGet();
-                return false;
-            }
-            
-        } catch (Throwable t) {
-            // On any error, allow the tick to proceed (fail-safe)
+    public static boolean shouldTickEntity(int index, String className) {
+        // Check if optimization is enabled
+        if (!com.criticalrange.CatalystConfig.TICK_OPTIMIZATION_ENABLED) {
+            ticksProcessed.incrementAndGet();
             return true;
         }
+        
+        long tick = serverTickCounter.get();
+        double tps = currentTPS;
+        
+        // Determine how many groups to tick based on server load
+        int activeGroups;
+        if (tps < CRITICAL_LOAD_TPS_THRESHOLD) {
+            // Critical load: only 1 group per tick (25% of entities)
+            activeGroups = 1;
+        } else if (tps < HEAVY_LOAD_TPS_THRESHOLD) {
+            // Heavy load: 2 groups per tick (50% of entities)
+            activeGroups = HEAVY_LOAD_GROUPS;
+        } else {
+            // Normal: all groups tick (100% of entities)
+            activeGroups = TICK_GROUPS;
+        }
+        
+        // Check if this entity's group is active this tick
+        int entityGroup = index % TICK_GROUPS;
+        boolean shouldTick = (entityGroup < activeGroups) || 
+                            ((tick + entityGroup) % TICK_GROUPS < activeGroups);
+        
+        // Apply per-system tuning
+        if (shouldTick) {
+            shouldTick = applySystemSpecificRules(index, tick, tps, className);
+        }
+        
+        // Record statistics
+        if (shouldTick) {
+            ticksProcessed.incrementAndGet();
+        } else {
+            ticksSkipped.incrementAndGet();
+            recordSystemSkip(className);
+        }
+        
+        return shouldTick;
     }
     
     /**
-     * Get the distance from an entity to the nearest player.
-     * Uses reflection to work with any entity type.
+     * Apply system-specific optimization rules.
+     * Some systems can be throttled more aggressively than others.
      */
-    private static double getDistanceToNearestPlayer(Object entity) {
-        try {
-            // Try to get position from the entity
-            // This uses reflection since we don't have direct access to entity classes
-            
-            // Try common getter methods
-            Object position = tryGetPosition(entity);
-            if (position == null) {
-                return 0; // Can't determine distance, tick anyway
+    private static boolean applySystemSpecificRules(int index, long tick, double tps, String className) {
+        // Repulsion system - can skip 75% under normal load, 90% under heavy load
+        // Entities overlapping slightly is acceptable for performance
+        if (className.contains("RepulsionTicker") || className.contains("Repulsion")) {
+            if (tps < HEAVY_LOAD_TPS_THRESHOLD) {
+                // Only tick 1 in 10 entities
+                if (index % 10 != (tick % 10)) {
+                    repulsionSkipped.incrementAndGet();
+                    return false;
+                }
+            } else {
+                // Only tick 1 in 4 entities
+                if (index % 4 != (tick % 4)) {
+                    repulsionSkipped.incrementAndGet();
+                    return false;
+                }
             }
-            
-            // For now, return a default that allows ticking
-            // This will be enhanced when we have access to player tracking
-            return 0;
-            
-        } catch (Throwable t) {
-            return 0; // Fail-safe: tick the entity
+        }
+        
+        // Movement states - can be delayed for non-visible entities
+        // Visual state changes are batched anyway
+        if (className.contains("MovementStatesSystems")) {
+            if (tps < HEAVY_LOAD_TPS_THRESHOLD) {
+                // Skip 50% even when "allowed" by group
+                if (index % 2 == 0 && tick % 2 != 0) {
+                    movementSkipped.incrementAndGet();
+                    return false;
+                }
+            }
+        }
+        
+        // UpdateLocation - be more careful, but still can batch
+        if (className.contains("UpdateLocationSystems")) {
+            if (tps < CRITICAL_LOAD_TPS_THRESHOLD) {
+                // Skip 50% under critical load
+                if (index % 2 == 0 && tick % 2 != 0) {
+                    locationSkipped.incrementAndGet();
+                    return false;
+                }
+            }
+        }
+        
+        return true;
+    }
+    
+    private static void recordSystemSkip(String className) {
+        // Simple tracking without creating per-class maps
+        if (className.contains("Repulsion")) {
+            repulsionSkipped.incrementAndGet();
+        } else if (className.contains("Movement")) {
+            movementSkipped.incrementAndGet();
+        } else if (className.contains("Location")) {
+            locationSkipped.incrementAndGet();
         }
     }
     
-    /**
-     * Try to get position from an entity using reflection.
-     */
-    private static Object tryGetPosition(Object entity) {
-        try {
-            // Try getPosition()
-            var method = entity.getClass().getMethod("getPosition");
-            return method.invoke(entity);
-        } catch (NoSuchMethodException e) {
-            // Try position()
-            try {
-                var method = entity.getClass().getMethod("position");
-                return method.invoke(entity);
-            } catch (Exception e2) {
-                return null;
-            }
-        } catch (Exception e) {
-            return null;
-        }
-    }
+    // ========== Server Tick Tracking ==========
     
     /**
-     * Increment the global tick counter.
-     * Should be called once per server tick.
+     * Called once per server tick to update the tick counter.
      */
     public static void onServerTick() {
-        tickCounter.incrementAndGet();
+        serverTickCounter.incrementAndGet();
     }
     
     /**
      * Update the current TPS measurement.
+     * @param tps Current ticks per second
      */
     public static void updateTPS(double tps) {
         currentTPS = tps;
     }
     
-    /**
-     * Get current TPS.
-     */
+    // ========== Getters ==========
+    
     public static double getCurrentTPS() {
         return currentTPS;
     }
     
-    /**
-     * Get count of ticks that were skipped.
-     */
     public static long getTicksSkipped() {
         return ticksSkipped.get();
     }
     
-    /**
-     * Get count of ticks that were processed.
-     */
     public static long getTicksProcessed() {
         return ticksProcessed.get();
     }
     
-    /**
-     * Get skip ratio as a percentage.
-     */
     public static double getSkipRatio() {
         long skipped = ticksSkipped.get();
         long processed = ticksProcessed.get();
@@ -162,11 +214,26 @@ public class CatalystTickHelper {
         return (skipped * 100.0) / total;
     }
     
+    public static long getRepulsionSkipped() {
+        return repulsionSkipped.get();
+    }
+    
+    public static long getMovementSkipped() {
+        return movementSkipped.get();
+    }
+    
+    public static long getLocationSkipped() {
+        return locationSkipped.get();
+    }
+    
     /**
      * Reset statistics.
      */
     public static void resetStats() {
         ticksSkipped.set(0);
         ticksProcessed.set(0);
+        repulsionSkipped.set(0);
+        movementSkipped.set(0);
+        locationSkipped.set(0);
     }
 }

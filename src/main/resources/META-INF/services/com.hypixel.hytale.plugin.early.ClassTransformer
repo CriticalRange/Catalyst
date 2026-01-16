@@ -1,3 +1,13 @@
+com.criticalrange.transformer.ServerTickTransformer
+com.criticalrange.transformer.TestTransformer
 com.criticalrange.transformer.TickOptimizationTransformer
 com.criticalrange.transformer.EntityTrackerTransformer
 com.criticalrange.transformer.ChunkCacheTransformer
+com.criticalrange.transformer.LightingOptimizationTransformer
+com.criticalrange.transformer.MovementOptimizationTransformer
+com.criticalrange.transformer.PhysicsOptimizerTransformer
+com.criticalrange.transformer.AiOptimizerTransformer
+com.criticalrange.transformer.WorldGenNetworkTransformer
+com.criticalrange.transformer.LazyBlockEntityTransformer
+com.criticalrange.transformer.LazyBlockTickTransformer
+com.criticalrange.transformer.LazyFluidTransformer

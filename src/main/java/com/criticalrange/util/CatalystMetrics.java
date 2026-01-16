@@ -1,105 +1,188 @@
 package com.criticalrange.util;
 
+import java.lang.reflect.Field;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * Performance metrics collection for Catalyst optimizations.
- * Tracks timing, counts, and provides reporting.
+ *
+ * <p>Tracks timing, counts, and provides reporting for all optimization systems.</p>
+ *
+ * <p>This version uses reflection to read injected counter fields from transformed classes,
+ * avoiding classloader issues with early plugins.</p>
  */
 public class CatalystMetrics {
-    
-    /** Method timing data (exponential moving average) */
-    private static final Map<String, Long> timings = new ConcurrentHashMap<>();
-    
-    /** Call counts per method */
-    private static final Map<String, AtomicLong> callCounts = new ConcurrentHashMap<>();
-    
-    /** Server tick tracking */
+
+    /** Last server tick time (for TPS calculation) */
     private static volatile long lastTickTime = System.nanoTime();
+
+    /** Current TPS (smoothed) */
     private static volatile double currentTPS = 20.0;
+
+    /** Total ticks since server start */
     private static final AtomicLong tickCount = new AtomicLong(0);
-    
-    /** Memory tracking */
-    private static volatile long lastMemoryCheck = System.currentTimeMillis();
-    private static volatile long lastUsedMemory = 0;
-    
+
+    /** Cache for reflected fields to avoid repeated lookups */
+    private static final Map<String, Field> fieldCache = new ConcurrentHashMap<>();
+
     /**
-     * Start timing a method.
-     * @param name Method identifier
-     * @return Start time in nanoseconds
+     * Gets a static long field from a class using reflection.
+     *
+     * @param className Binary class name (e.g., "com/example/MyClass")
+     * @param fieldName Name of the static field
+     * @return Field value, or 0 if not found/error
      */
-    public static long start(String name) {
-        return System.nanoTime();
+    private static long getStaticField(String className, String fieldName) {
+        String key = className + "." + fieldName;
+        Field field = fieldCache.get(key);
+
+        if (field == null) {
+            try {
+                Class<?> clazz = Class.forName(className.replace('/', '.'));
+                field = clazz.getDeclaredField(fieldName);
+                field.setAccessible(true);
+                fieldCache.put(key, field);
+            } catch (Exception e) {
+                // Class not loaded yet or field doesn't exist
+                return 0;
+            }
+        }
+
+        try {
+            return field.getLong(null);
+        } catch (Exception e) {
+            return 0;
+        }
     }
-    
+
     /**
-     * End timing a method and record the duration.
-     * @param startTime The start time from start()
-     * @param name Method identifier
+     * Gets a static long field from a class using reflection with default naming.
+     *
+     * @param className Dot format class name (e.g., "com.example.MyClass")
+     * @return Field value, or 0 if not found/error
      */
-    public static void end(long startTime, String name) {
-        long duration = System.nanoTime() - startTime;
-        
-        // Update timing with exponential moving average
-        timings.compute(name, (k, v) -> v == null ? duration : (v * 9 + duration) / 10);
-        
-        // Increment call count
-        callCounts.computeIfAbsent(name, k -> new AtomicLong()).incrementAndGet();
+    private static long getCounterField(String className) {
+        // Convert to field name format: com.example.Class -> com_example_Class$count
+        String fieldName = "catalyst$" + className.replace('.', '_').replace('$', '_') + "$count";
+        String binaryName = className.replace('.', '/');
+        return getStaticField(binaryName, fieldName);
     }
-    
+
     /**
-     * Record a server tick for TPS calculation.
+     * Gets a tick count field from a class.
+     *
+     * @param className Dot format class name
+     * @return Field value, or 0 if not found/error
      */
-    public static void onServerTick() {
-        long now = System.nanoTime();
-        long elapsed = now - lastTickTime;
-        lastTickTime = now;
-        
-        // Calculate TPS (smoothed)
-        double instantTPS = 1_000_000_000.0 / elapsed;
-        currentTPS = (currentTPS * 0.95) + (instantTPS * 0.05);
-        
-        tickCount.incrementAndGet();
-        
-        // Update tick helper
-        CatalystTickHelper.onServerTick();
-        CatalystTickHelper.updateTPS(currentTPS);
+    private static long getTickField(String className) {
+        String fieldName = "catalyst$" + className.replace('.', '_').replace('$', '_') + "$tickCount";
+        String binaryName = className.replace('.', '/');
+        return getStaticField(binaryName, fieldName);
     }
-    
+
     /**
-     * Get current TPS.
+     * Generates a comprehensive performance report.
+     *
+     * @return Formatted report string
+     */
+    public static String generateReport() {
+        StringBuilder sb = new StringBuilder();
+        sb.append("\n═══════════════════════════════════════════════\n");
+        sb.append("         Catalyst Performance Report            \n");
+        sb.append("═══════════════════════════════════════════════\n");
+
+        // TPS - Read from TickingThread
+        long ticks = getTickField("com.hypixel.hytale.server.core.util.thread.TickingThread");
+        if (ticks > 0) tickCount.set(ticks);
+
+        sb.append(String.format("TPS: %.2f (ticks: %d)\n", currentTPS, ticks));
+
+        // Memory
+        MemoryStats mem = getMemoryStats();
+        sb.append(String.format("Memory: %dMB / %dMB (%.1f%%)\n",
+            mem.usedMB(), mem.maxMB(), mem.usagePercent()));
+
+        // Tick optimization stats
+        sb.append("\n── Tick Optimization ──\n");
+        long entityTicks = getTickField("com.hypixel.hytale.component.system.tick.EntityTickingSystem");
+        long locationTicks = getCounterField("com.hypixel.hytale.server.core.modules.entity.system.UpdateLocationSystems$TickingSystem");
+        long movementTicks = getCounterField("com.hypixel.hytale.server.core.entity.movement.MovementStatesSystems$TickingSystem");
+        long repulsionTicks = getCounterField("com.hypixel.hytale.server.core.modules.entity.repulsion.RepulsionSystems$RepulsionTicker");
+        sb.append(String.format("  Entity system ticks: %d\n", entityTicks));
+        sb.append(String.format("  Location updates: %d\n", locationTicks));
+        sb.append(String.format("  Movement ticks: %d\n", movementTicks));
+        sb.append(String.format("  Repulsion ticks: %d\n", repulsionTicks));
+
+        // Entity tracking stats
+        sb.append("\n── Entity Tracking ──\n");
+        long collectVisible = getCounterField("com.hypixel.hytale.server.core.modules.entity.tracker.EntityTrackerSystems$CollectVisible");
+        long sendPackets = getCounterField("com.hypixel.hytale.server.core.modules.entity.tracker.EntityTrackerSystems$SendPackets");
+        long clearViewers = getCounterField("com.hypixel.hytale.server.core.modules.entity.tracker.EntityTrackerSystems$ClearEntityViewers");
+        long addToVisible = getCounterField("com.hypixel.hytale.server.core.modules.entity.tracker.EntityTrackerSystems$AddToVisible");
+        sb.append(String.format("  Collect visible: %d\n", collectVisible));
+        sb.append(String.format("  Send packets: %d\n", sendPackets));
+        sb.append(String.format("  Clear viewers: %d\n", clearViewers));
+        sb.append(String.format("  Add to visible: %d\n", addToVisible));
+
+        // Movement optimization stats
+        sb.append("\n── Movement Optimization ──\n");
+        sb.append(String.format("  Location system ticks: %d\n", locationTicks));
+        sb.append(String.format("  Movement ticks: %d\n", movementTicks));
+
+        // Physics optimization stats
+        sb.append("\n── Physics Optimization ──\n");
+        long itemPhysics = getCounterField("com.hypixel.hytale.server.core.modules.entity.item.ItemPhysicsSystem");
+        sb.append(String.format("  Item physics ticks: %d\n", itemPhysics));
+        sb.append(String.format("  Repulsion ticks: %d\n", repulsionTicks));
+
+        // AI optimization stats
+        sb.append("\n── AI Optimization ──\n");
+        long aiTicks = getCounterField("com.hypixel.hytale.server.npc.systems.BlackboardSystems$TickingSystem");
+        sb.append(String.format("  AI brain ticks: %d\n", aiTicks));
+
+        // Network optimization stats
+        sb.append("\n── Network Optimization ──\n");
+        long networkFlush = getCounterField("com.hypixel.hytale.server.core.modules.entity.player.PlayerConnectionFlushSystem");
+        sb.append(String.format("  Packet flushes: %d\n", networkFlush));
+
+        // Lighting stats
+        sb.append("\n── Lighting Optimization ──\n");
+        sb.append("  (Tracking active - counters increment on light operations)\n");
+
+        // Chunk cache stats
+        sb.append("\n── Chunk I/O ──\n");
+        sb.append("  (Tracking active - counters increment on chunk operations)\n");
+
+        sb.append("═══════════════════════════════════════════════\n");
+
+        return sb.toString();
+    }
+
+    /**
+     * Gets the current TPS (Ticks Per Second).
+     *
+     * @return Current TPS value
      */
     public static double getCurrentTPS() {
         return currentTPS;
     }
-    
+
     /**
-     * Get total tick count.
+     * Gets the total tick count since server start.
+     *
+     * @return Total number of ticks
      */
     public static long getTickCount() {
-        return tickCount.get();
+        long ticks = getTickField("com.hypixel.hytale.server.core.util.thread.TickingThread");
+        return ticks > 0 ? ticks : tickCount.get();
     }
-    
+
     /**
-     * Get timing for a method in microseconds.
-     */
-    public static double getTimingMicros(String name) {
-        Long timing = timings.get(name);
-        return timing == null ? 0 : timing / 1000.0;
-    }
-    
-    /**
-     * Get call count for a method.
-     */
-    public static long getCallCount(String name) {
-        AtomicLong count = callCounts.get(name);
-        return count == null ? 0 : count.get();
-    }
-    
-    /**
-     * Get memory usage stats.
+     * Gets memory usage statistics.
+     *
+     * @return MemoryStats containing current memory usage
      */
     public static MemoryStats getMemoryStats() {
         Runtime runtime = Runtime.getRuntime();
@@ -107,92 +190,49 @@ public class CatalystMetrics {
         long free = runtime.freeMemory();
         long used = total - free;
         long max = runtime.maxMemory();
-        
+
         return new MemoryStats(used, free, total, max);
     }
-    
+
     /**
-     * Generate a performance report.
-     */
-    public static String generateReport() {
-        StringBuilder sb = new StringBuilder();
-        sb.append("\n═══════════════════════════════════════════════\n");
-        sb.append("         Catalyst Performance Report            \n");
-        sb.append("═══════════════════════════════════════════════\n");
-        
-        // TPS
-        sb.append(String.format("TPS: %.2f (ticks: %d)\n", currentTPS, tickCount.get()));
-        
-        // Memory
-        MemoryStats mem = getMemoryStats();
-        sb.append(String.format("Memory: %dMB / %dMB (%.1f%%)\n",
-            mem.usedMB(), mem.maxMB(), mem.usagePercent()));
-        
-        // Tick optimization stats
-        sb.append("\n── Tick Optimization ──\n");
-        sb.append(String.format("  Ticks skipped: %d\n", CatalystTickHelper.getTicksSkipped()));
-        sb.append(String.format("  Ticks processed: %d\n", CatalystTickHelper.getTicksProcessed()));
-        sb.append(String.format("  Skip ratio: %.1f%%\n", CatalystTickHelper.getSkipRatio()));
-        
-        // Entity tracking stats
-        sb.append("\n── Entity Tracking ──\n");
-        sb.append(String.format("  Searches: %d\n", CatalystSpatialIndex.getSearchCount()));
-        sb.append(String.format("  Optimized: %d\n", CatalystSpatialIndex.getSearchesOptimized()));
-        sb.append(String.format("  Updates skipped: %d\n", CatalystSpatialIndex.getUpdatesSkipped()));
-        
-        // Chunk cache stats
-        sb.append("\n── Chunk Cache ──\n");
-        sb.append(String.format("  Cache hits: %d\n", CatalystChunkCache.getCacheHits()));
-        sb.append(String.format("  Cache misses: %d\n", CatalystChunkCache.getCacheMisses()));
-        sb.append(String.format("  Hit ratio: %.1f%%\n", CatalystChunkCache.getHitRatio()));
-        sb.append(String.format("  Active chunks: %d\n", CatalystChunkCache.getActiveChunkCount()));
-        sb.append(String.format("  Chunks loaded: %d\n", CatalystChunkCache.getChunksLoaded()));
-        sb.append(String.format("  Chunks unloaded: %d\n", CatalystChunkCache.getChunksUnloaded()));
-        
-        // Top methods by time
-        sb.append("\n── Hot Methods ──\n");
-        timings.entrySet().stream()
-            .sorted(Map.Entry.<String, Long>comparingByValue().reversed())
-            .limit(10)
-            .forEach(e -> sb.append(String.format("  %s: %.2fμs\n",
-                e.getKey(), e.getValue() / 1000.0)));
-        
-        sb.append("═══════════════════════════════════════════════\n");
-        
-        return sb.toString();
-    }
-    
-    /**
-     * Reset all metrics.
+     * Resets all metrics to zero.
      */
     public static void reset() {
-        timings.clear();
-        callCounts.clear();
         tickCount.set(0);
-        CatalystTickHelper.resetStats();
-        CatalystSpatialIndex.resetMetrics();
+        fieldCache.clear(); // Clear cache to force re-reading
     }
-    
+
     /**
      * Memory statistics record.
+     *
+     * @param used Used memory in bytes
+     * @param free Free memory in bytes
+     * @param total Total memory in bytes
+     * @param max Maximum memory in bytes
      */
     public record MemoryStats(long used, long free, long total, long max) {
+
+        /** Gets used memory in megabytes */
         public long usedMB() {
             return used / (1024 * 1024);
         }
-        
+
+        /** Gets free memory in megabytes */
         public long freeMB() {
             return free / (1024 * 1024);
         }
-        
+
+        /** Gets total memory in megabytes */
         public long totalMB() {
             return total / (1024 * 1024);
         }
-        
+
+        /** Gets maximum memory in megabytes */
         public long maxMB() {
             return max / (1024 * 1024);
         }
-        
+
+        /** Gets memory usage as a percentage */
         public double usagePercent() {
             return (used * 100.0) / max;
         }
