@@ -24,9 +24,8 @@ jobs:
     - name: Setup Gradle
       uses: gradle/actions/setup-gradle@v3
       
-    - name: Download Hytale Server dependencies
+    - name: Download and Install Hytale Server
       run: |
-        # Create directory for downloader
         mkdir downloader
         cd downloader
         wget https://downloader.hytale.com/hytale-downloader.zip
@@ -35,27 +34,19 @@ jobs:
         chmod +x hytale-downloader
         
         # Download server files
-        # Note: If this requires authentication, add HYTALE_TOKEN to env/secrets
         ./hytale-downloader
         
-        # Verification
-        ls -R
+        # Verify jar location (debugging)
+        find . -name "HytaleServer.jar"
         
-        # Move up
-        cd ..
-        
-        # Prepare directory structure expected by build.gradle
-        # Structure: $hytaleHome/release/package/game/latest/Server/HytaleServer.jar
-        mkdir -p hytale-mock/release/package/game/latest/
-        
-        # Move downloaded files (Assuming downloader outputs 'Server' folder and 'Assets.zip')
-        # Adjust these paths if downloader structure differs
-        if [ -d "downloader/Server" ]; then
-           mv downloader/Server hytale-mock/release/package/game/latest/
-        fi
-        if [ -f "downloader/Assets.zip" ]; then
-           mv downloader/Assets.zip hytale-mock/release/package/game/latest/
+        # Install to Maven Local
+        # Note: Path depends on downloader output. Assuming Server/HytaleServer.jar relative to current dir
+        if [ -f "Server/HytaleServer.jar" ]; then
+           mvn install:install-file -Dfile=Server/HytaleServer.jar -DgroupId=com.hypixel.hytale -DartifactId=HytaleServer-parent -Dversion=1.0-SNAPSHOT -Dpackaging=jar
+        else
+            echo "Error: HytaleServer.jar not found after download!"
+            exit 1
         fi
 
     - name: Build with Gradle
-      run: ./gradlew build -PhytaleHome=$(pwd)/hytale-mock
+      run: ./gradlew build -PuseMavenHytale=true

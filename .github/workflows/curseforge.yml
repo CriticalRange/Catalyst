@@ -20,7 +20,7 @@ jobs:
           distribution: 'temurin'
           java-version: '21'
 
-      - name: Download Hytale Server dependencies
+      - name: Download and Install Hytale Server
         run: |
           mkdir downloader
           cd downloader
@@ -29,13 +29,16 @@ jobs:
           mv hytale-downloader-linux-amd64 hytale-downloader
           chmod +x hytale-downloader
           ./hytale-downloader
-          cd ..
-          mkdir -p hytale-mock/release/package/game/latest/
-          if [ -d "downloader/Server" ]; then mv downloader/Server hytale-mock/release/package/game/latest/; fi
-          if [ -f "downloader/Assets.zip" ]; then mv downloader/Assets.zip hytale-mock/release/package/game/latest/; fi
+
+          if [ -f "Server/HytaleServer.jar" ]; then
+             mvn install:install-file -Dfile=Server/HytaleServer.jar -DgroupId=com.hypixel.hytale -DartifactId=HytaleServer-parent -Dversion=1.0-SNAPSHOT -Dpackaging=jar
+          else
+              echo "Error: HytaleServer.jar not found!"
+              exit 1
+          fi
 
       - name: Publish to CurseForge
         env:
           CURSEFORGE_TOKEN: ${{ secrets.CURSEFORGE_TOKEN }}
           CURSEFORGE_PROJECT_ID: ${{ secrets.CURSEFORGE_PROJECT_ID }}
-        run: ./gradlew curseforge -PhytaleHome=$(pwd)/hytale-mock
+        run: ./gradlew curseforge -PuseMavenHytale=true
