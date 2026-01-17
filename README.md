@@ -1,169 +1,84 @@
-# Catalyst ⚡
+# Catalyst
 
-**Catalyst** - Hytale Performance Optimization Mod
+> Bytecode-level performance optimization for Hytale servers
 
-A high-performance Early Plugin that optimizes Hytale server performance through bytecode transformation and class transformers.
+Catalyst is an early-loading plugin that hooks into Hytale's class loading pipeline and injects optimizations directly into the bytecode. Instead of wrapping APIs or patching the JAR, it modifies classes as they're loaded—so the optimizations apply everywhere, automatically.
 
-## ⚡ Features
+## Why this exists
 
-- 🚀 **Tick Rate Optimization** - Skip ticking for distant entities, adaptive tick rates
-- 🎯 **Entity Tracking Optimization** - Spatial partitioning (O(n) → O(log n))
-- 📦 **Chunk Loading & Caching** - Async loading, predictive caching, memory compression
-- 🌐 **Network Packet Batching** - Reduce TCP overhead, batch small packets
-- 💾 **Memory Management** - Object pooling, off-heap memory
-- ⏱️ **Thread Pool Optimization** - Custom pools for CPU-bound vs IO-bound tasks
-- 📊 **Profiling & Metrics** - Inject timing into critical paths
+Hytale servers do a lot of work that isn't always necessary. Chests get instantiated during world gen before anyone's near them. Fluids simulate during chunk load even when no player can see the result. Block tick discovery runs eagerly on every chunk preload.
 
-## 📍 Hytale Server JAR Location
+Catalyst defers this work until it's actually needed, and adds some batching/caching on top. The changes happen at the bytecode level, so there's no plugin API overhead and no game patches to reapply when Hytale updates.
 
-The `HytaleServer.jar` is the main API reference for mod development. For Flatpak installations:
+## What's actually working
 
-```
-~/.var/app/com.hypixel.HytaleLauncher/data/Hytale/install/release/package/game/latest/Server/HytaleServer.jar
-```
+Right now the project is in early stages. Here's what's implemented:
 
-### Key Paths (Flatpak)
+| Transformer | What it does |
+|-------------|--------------|
+| `LazyBlockEntityTransformer` | Defers chest/furnace/sign creation until first access |
+| `LazyBlockTickTransformer` | Postpones tick discovery during chunk preload |
+| `LazyFluidTransformer` | Skips fluid sim during chunk load |
+| `BatchBlockEntityTransformer` | Caches block types and batches entity collection |
 
-| Purpose | Path |
-|---------|------|
-| **Server JAR** | `~/.var/app/com.hypixel.HytaleLauncher/data/Hytale/install/release/package/game/latest/Server/HytaleServer.jar` |
-| **Mods folder** | `~/.var/app/com.hypixel.HytaleLauncher/data/Hytale/install/mods/` |
-| **Early plugins** | `~/.var/app/com.hypixel.HytaleLauncher/data/Hytale/install/early-plugins/` |
-| **JRE** | `~/.var/app/com.hypixel.HytaleLauncher/data/Hytale/install/release/package/jre/` |
-| **Assets** | `~/.var/app/com.hypixel.HytaleLauncher/data/Hytale/install/release/package/game/latest/Assets.zip` |
+Everything's toggleable at runtime via `/catalyst menu`—no restart needed.
 
-## 📚 Documentation
+## Installation
 
-- **[Performance Optimizations](docs/PERFORMANCE_OPTIMIZATIONS.md)** - Core optimization techniques (PROJECT ROADMAP)
-- **[API Reference](docs/HYTALE_API_REFERENCE.md)** - Hytale Server Plugin API documentation
-- **[Early Plugins Guide](docs/ADVANCED_EARLY_PLUGINS.md)** - Bootstrap plugins and bytecode transformation
+**For most users:**
 
-## 🚀 Quick Start
+1. Download the latest JAR from: [RELEASES PAGE - ADD URL HERE]
+2. Drop it in your `early-plugins/` folder (The plugin goes in `early-plugins/`, not `mods/`. It runs before the server starts, so transformers can intercept class loading.):
+   - **Windows**: `C:\Program Files\Hytale\install\early-plugins\`
+   - **Linux (Flatpak)**: `~/.var/app/com.hypixel.HytaleLauncher/data/Hytale/install/early-plugins/`
+   - **macOS**: `~/Library/Application Support/Hytale/install/early-plugins/` (You may want to double-check the macOS path. I used the standard macOS app support location because I don't have a mac)
+3. Restart your server
 
-### Prerequisites
-
-- Java 25+
-- Hytale (installed via official launcher)
-- Gradle (included via wrapper)
-
-### Installation
+**For developers:**
 
 ```bash
-# Clone or download Catalyst
-cd Catalyst
-
-# Build the mod
 ./gradlew build
-
-# Deploy to early-plugins (for class transformers)
 ./gradlew deployEarlyPlugin
 ```
 
-## 🏗️ Architecture
+The plugin goes in `early-plugins/`, not `mods/`. It runs before the server starts, so transformers can intercept class loading.
 
-Catalyst operates as an **Early Plugin** (Bootstrap Plugin) that uses bytecode transformation to optimize server performance **before** classes are loaded.
+## Finding the Hytale JAR
+
+If you're on Flatpak, the paths are a bit buried:
 
 ```
-┌─────────────────────────────────────────────────┐
-│                 Hytale Server                    │
-├─────────────────────────────────────────────────┤
-│  ┌─────────────────────────────────────────┐    │
-│  │     TransformingClassLoader             │    │
-│  │  ┌───────────────────────────────────┐  │    │
-│  │  │  Catalyst ClassTransformers       │  │    │
-│  │  │  ├── TickOptimizationTransformer  │  │    │
-│  │  │  ├── EntityTrackerTransformer     │  │    │
-│  │  │  ├── ChunkCacheTransformer        │  │    │
-│  │  │  ├── PacketBatchingTransformer    │  │    │
-│  │  │  └── MemoryPoolingTransformer     │  │    │
-│  │  └───────────────────────────────────┘  │    │
-│  └─────────────────────────────────────────┘    │
-│                      ↓                           │
-│           Optimized Server Code                  │
-└─────────────────────────────────────────────────┘
+~/.var/app/com.hypixel.HytaleLauncher/data/Hytale/
+└── install/
+    ├── early-plugins/        # Put Catalyst here
+    ├── mods/                 # Regular plugins go here
+    └── release/package/game/latest/
+        ├── Server/HytaleServer.jar
+        └── Assets.zip
 ```
 
-## 🎯 Golden Rules
+## Development
 
-### ❌ Don't:
-- Optimize without profiling first
-- Optimize everything (premature optimization)
-- Assume O(1) is better than O(n) without context
-- Use multiple threads without understanding synchronization
-- Cache everything (memory pressure)
-- Optimize code that's not a bottleneck
+The transformer pattern is straightforward—extend `BaseTransformer`, implement `transform()`, and register via `META-INF/services`. If something goes wrong, return the original bytecode and the server continues normally.
 
-### ✅ Do:
-- Profile first
-- Optimize the critical path
-- Measure before and after
-- Test under realistic conditions
-- Consider maintainability
-- Document optimizations
+All config fields are `volatile` and readable at runtime, so you can flip optimizations on/off without restarting.
 
-## 📋 Implementation Checklist
-
-- [ ] Profile server to identify bottlenecks
-- [ ] Benchmark before optimization
-- [ ] Implement single optimization
-- [ ] Benchmark after optimization
-- [ ] If no improvement, revert and try different approach
-- [ ] Test under realistic load
-- [ ] Monitor for regressions
-- [ ] Document what works and what doesn't
-
-## 🛠️ Gradle Tasks
-
-### Build Tasks
 ```bash
-./gradlew build              # Build the mod JAR
-./gradlew jar                # Build JAR only
-./gradlew clean              # Clean build outputs
+./gradlew build              # Build JAR
+./gradlew deployEarlyPlugin  # Deploy to early-plugins/
+./gradlew runServer          # Launch server with mod loaded
 ```
 
-### Deployment Tasks
-```bash
-./gradlew deployEarlyPlugin  # Deploy to early-plugins directory
-./gradlew runServer          # Start Hytale server with mod
-```
+## Documentation
 
-## 📁 Project Structure
+- [Performance Optimizations](docs/PERFORMANCE_OPTIMIZATIONS.md) — Roadmap and planned work
+- [API Reference](docs/HYTALE_API_REFERENCE.md) — Hytale Server Plugin API docs
+- [Early Plugins Guide](docs/ADVANCED_EARLY_PLUGINS.md) — How bytecode transformation works
 
-```
-Catalyst/
-├── docs/                              # Documentation
-│   ├── PERFORMANCE_OPTIMIZATIONS.md   # Optimization roadmap
-│   ├── HYTALE_API_REFERENCE.md        # API documentation
-│   └── ADVANCED_EARLY_PLUGINS.md      # Early plugins guide
-├── src/main/java/com/criticalrange/
-│   ├── Catalyst.java                  # Main entry point
-│   └── transformer/                   # Class transformers
-│       ├── TickOptimizationTransformer.java
-│       ├── EntityTrackerTransformer.java
-│       ├── ChunkCacheTransformer.java
-│       └── ...
-├── src/main/resources/
-│   ├── manifest.json                  # Mod manifest
-│   └── META-INF/services/             # Service loader configs
-├── build.gradle                       # Build configuration
-├── gradle.properties                  # Mod properties
-└── README.md                          # This file
-```
+## Status
 
-## 🔒 Security & Best Practices
+This is experimental. Early plugins run with full system access and can crash your server if something goes wrong. Test on a non-production world first, keep backups, and report issues.
 
-- Early plugins run with full system access
-- Always test on a separate server
-- Keep backups of world data
-- Profile before optimizing - measure twice, cut once
-- Return original bytecode on transformation errors
+## License
 
-## 📝 License
-
-This project is available under the **CC0 License** - feel free to use it however you like!
-
----
-
-**Built with ❤️ for Hytale server performance**
-
-*"Making servers fly at light speed"*
+MIT — do whatever you want with this code, just keep the copyright notice.
