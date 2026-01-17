@@ -20,11 +20,21 @@ jobs:
           distribution: 'temurin'
           java-version: '21'
 
-      - name: Make Gradle Wrapper Executable
-        run: chmod +x ./gradlew
+      - name: Download Hytale Server dependencies
+        run: |
+          mkdir downloader
+          cd downloader
+          wget https://downloader.hytale.com/hytale-downloader.zip
+          unzip hytale-downloader.zip
+          chmod +x hytale-downloader
+          ./hytale-downloader
+          cd ..
+          mkdir -p hytale-mock/release/package/game/latest/
+          if [ -d "downloader/Server" ]; then mv downloader/Server hytale-mock/release/package/game/latest/; fi
+          if [ -f "downloader/Assets.zip" ]; then mv downloader/Assets.zip hytale-mock/release/package/game/latest/; fi
 
       - name: Publish to CurseForge
         env:
           CURSEFORGE_TOKEN: ${{ secrets.CURSEFORGE_TOKEN }}
           CURSEFORGE_PROJECT_ID: ${{ secrets.CURSEFORGE_PROJECT_ID }}
-        run: ./gradlew curseforge
+        run: ./gradlew curseforge -PhytaleHome=$(pwd)/hytale-mock
