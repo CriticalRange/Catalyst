@@ -49,7 +49,7 @@ jobs:
         
         if [ -f "$JAR_PATH" ]; then
            echo "Found jar at: $JAR_PATH"
-           mvn install:install-file -Dfile="$JAR_PATH" -DgroupId=com.hypixel.hytale -DartifactId=HytaleServer-parent -Dversion=1.0-SNAPSHOT -Dpackaging=jar
+           mvn install:install-file -Dfile="$JAR_PATH" -DgroupId=com.hypixel.hytale -DartifactId=HytaleServer -Dversion=1.0-SNAPSHOT -Dpackaging=jar
         else
             echo "Error: HytaleServer.jar not found after extraction!"
             ls -R

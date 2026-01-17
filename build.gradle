@@ -76,7 +76,7 @@ dependencies {
     testImplementation 'org.junit.jupiter:junit-jupiter:5.10.0'
     
     if (project.hasProperty('useMavenHytale')) {
-        implementation 'com.hypixel.hytale:HytaleServer-parent:1.0-SNAPSHOT'
+        implementation 'com.hypixel.hytale:HytaleServer:1.0-SNAPSHOT'
     } else {
         implementation files(hytaleServerPath)
     }
