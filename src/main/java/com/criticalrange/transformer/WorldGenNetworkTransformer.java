@@ -3,18 +3,17 @@ package com.criticalrange.transformer;
 import org.objectweb.asm.*;
 
 /**
- * World Generation and Network Optimization Transformer
+ * World Gen Network Optimization Transformer
  *
- * Injects simple counters into network operations.
- * Uses inline bytecode to avoid external class dependencies.
+ * Tracks network packet flushes for metrics.
+ *
+ * Target: com.hypixel.hytale.server.core.modules.entity.player.PlayerConnectionFlushSystem
  */
 public class WorldGenNetworkTransformer extends BaseTransformer {
 
-    private static final boolean DEBUG = true;
-
     @Override
     public String getName() {
-        return "WorldGenNetworkOptimization";
+        return "WorldGenNetwork";
     }
 
     @Override
@@ -33,7 +32,6 @@ public class WorldGenNetworkTransformer extends BaseTransformer {
     }
 
     private static class OptimizerClassVisitor extends ClassVisitor {
-
         private final String className;
         private final String fieldName;
 
@@ -56,14 +54,9 @@ public class WorldGenNetworkTransformer extends BaseTransformer {
         public MethodVisitor visitMethod(int access, String name, String descriptor,
                                          String signature, String[] exceptions) {
             MethodVisitor mv = super.visitMethod(access, name, descriptor, signature, exceptions);
-
             if (name.equals("tick") && descriptor.startsWith("(FI")) {
-                if (DEBUG) {
-                    System.out.println("[Catalyst:Net] Injecting counter into " + className);
-                }
                 return new FlushMethodVisitor(mv, className, fieldName);
             }
-
             return mv;
         }
     }

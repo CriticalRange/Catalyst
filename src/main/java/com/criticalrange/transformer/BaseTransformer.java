@@ -25,7 +25,7 @@ public abstract class BaseTransformer implements ClassTransformer {
     protected static final int ASM_VERSION = Opcodes.ASM9;
 
     /** Debug mode - set to true for verbose logging */
-    protected static final boolean DEBUG = true;
+    protected static final boolean DEBUG = false;
 
     /** Whether this transformer is enabled */
     protected boolean enabled = true;
@@ -63,9 +63,7 @@ public abstract class BaseTransformer implements ClassTransformer {
     @Override
     public byte[] transform(String className, String classLoaderName, byte[] classBytes) {
         // Debug: Log every class being checked (limited to avoid spam)
-        if (DEBUG && (className.contains("Ticking") || className.contains("Entity") || className.contains("Tick") || className.contains("Server"))) {
-            System.out.println("[Catalyst:" + getName() + "] Checking: " + className);
-        }
+
 
         // Skip if disabled
         if (!enabled) {
@@ -120,7 +118,10 @@ public abstract class BaseTransformer implements ClassTransformer {
      * @param className The binary class name that was transformed
      */
     protected void logTransformation(String className) {
-        System.out.println("[Catalyst:" + getName() + "] Transformed: " + className.replace('/', '.'));
+            // Only log successful transformations if debug is enabled
+            if (DEBUG) {
+                System.out.println("[Catalyst] " + getName() + " applied to " + className.replace('/', '.'));
+            }
     }
 
     /**

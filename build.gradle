@@ -2,6 +2,7 @@ plugins {
     id 'java'
     id 'maven-publish'
     id 'org.jetbrains.gradle.plugin.idea-ext' version '1.3'
+    id "com.matthewprenger.cursegradle" version "1.4.0"
 }
 
 java {
@@ -634,5 +635,31 @@ publishing {
     }
     repositories {
         mavenLocal()
+    }
+}
+
+curseforge {
+    if (System.getenv("CURSEFORGE_TOKEN") != null) {
+        apiKey = System.getenv("CURSEFORGE_TOKEN")
+        project {
+            id = System.getenv("CURSEFORGE_PROJECT_ID")
+            changelog = "Release " + project.version
+            
+            // Dynamic release type based on version
+            if (project.version.toString().toLowerCase().contains("alpha")) {
+                releaseType = 'alpha'
+            } else if (project.version.toString().toLowerCase().contains("beta")) {
+                releaseType = 'beta'
+            } else {
+                releaseType = 'release'
+            }
+            
+            // Add game versions here - adjust as needed for Hytale
+            // addGameVersion '1.0.0' 
+            
+            mainArtifact(jar) {
+                displayName = "Catalyst ${project.version}"
+            }
+        }
     }
 }
