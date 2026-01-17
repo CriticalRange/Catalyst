@@ -62,8 +62,11 @@ jobs:
     - name: Build with Gradle
       run: ./gradlew build
 
+    - name: Prepare Artifacts
+      run: find build/libs -name "Catalyst-*.jar" ! -name "*-plain.jar" -exec cp {} . \;
+
     - name: Upload Build Artifacts
       uses: actions/upload-artifact@v4
       with:
         name: Catalyst-Build
-        path: build/libs/*.jar
+        path: Catalyst-*.jar
