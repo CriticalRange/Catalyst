@@ -39,7 +39,8 @@ jobs:
           JAR_PATH=$(find . -name "HytaleServer.jar" | head -n 1)
 
           if [ -f "$JAR_PATH" ]; then
-             mvn install:install-file -Dfile="$JAR_PATH" -DgroupId=com.hypixel.hytale -DartifactId=HytaleServer -Dversion=1.0-SNAPSHOT -Dpackaging=jar
+             echo '<?xml version="1.0" encoding="UTF-8"?><project xmlns="http://maven.apache.org/POM/4.0.0" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"><modelVersion>4.0.0</modelVersion><groupId>com.hypixel.hytale</groupId><artifactId>HytaleServer</artifactId><version>1.0-SNAPSHOT</version><description>Hytale Server</description></project>' > hytale-server.pom
+             mvn install:install-file -Dfile="$JAR_PATH" -DpomFile=hytale-server.pom -Dpackaging=jar
           else
               echo "Error: HytaleServer.jar not found!"
               ls -R
