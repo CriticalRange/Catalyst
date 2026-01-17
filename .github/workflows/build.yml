@@ -60,7 +60,7 @@ jobs:
         fi
 
     - name: Build with Gradle
-      run: ./gradlew build -PuseMavenHytale=true
+      run: ./gradlew build
 
     - name: Upload Build Artifacts
       uses: actions/upload-artifact@v4

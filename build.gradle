@@ -75,7 +75,16 @@ def assetsPath = hytaleBaseDir + "/" + patchline + "/package/game/latest/Assets.
 dependencies {
     testImplementation 'org.junit.jupiter:junit-jupiter:5.10.0'
     
-    if (project.hasProperty('useMavenHytale')) {
+    // Auto-detect Maven requirement:
+    // 1. Explicit flag (-PuseMavenHytale)
+    // 2. CI environment (GITHUB_ACTIONS)
+    // 3. Local file missing (fallback to Maven)
+    def useMaven = project.hasProperty('useMavenHytale') || System.getenv('GITHUB_ACTIONS') != null
+    if (!useMaven && !file(hytaleServerPath).exists()) {
+        useMaven = true
+    }
+
+    if (useMaven) {
         implementation 'com.hypixel.hytale:HytaleServer:1.0-SNAPSHOT'
     } else {
         implementation files(hytaleServerPath)

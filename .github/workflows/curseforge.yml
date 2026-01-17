@@ -51,4 +51,4 @@ jobs:
         env:
           CURSEFORGE_TOKEN: ${{ secrets.CURSEFORGE_TOKEN }}
           CURSEFORGE_PROJECT_ID: ${{ secrets.CURSEFORGE_PROJECT_ID }}
-        run: ./gradlew curseforge -PuseMavenHytale=true
+        run: ./gradlew curseforge
