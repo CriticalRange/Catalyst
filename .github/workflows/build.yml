@@ -61,3 +61,9 @@ jobs:
 
     - name: Build with Gradle
       run: ./gradlew build -PuseMavenHytale=true
+
+    - name: Upload Build Artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: Catalyst-Build
+        path: build/libs/*.jar
