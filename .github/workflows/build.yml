@@ -24,7 +24,37 @@ jobs:
     - name: Setup Gradle
       uses: gradle/actions/setup-gradle@v3
       
+    - name: Download Hytale Server dependencies
+      run: |
+        # Create directory for downloader
+        mkdir downloader
+        cd downloader
+        wget https://downloader.hytale.com/hytale-downloader.zip
+        unzip hytale-downloader.zip
+        chmod +x hytale-downloader
+        
+        # Download server files
+        # Note: If this requires authentication, add HYTALE_TOKEN to env/secrets
+        ./hytale-downloader
+        
+        # Verification
+        ls -R
+        
+        # Move up
+        cd ..
+        
+        # Prepare directory structure expected by build.gradle
+        # Structure: $hytaleHome/release/package/game/latest/Server/HytaleServer.jar
+        mkdir -p hytale-mock/release/package/game/latest/
+        
+        # Move downloaded files (Assuming downloader outputs 'Server' folder and 'Assets.zip')
+        # Adjust these paths if downloader structure differs
+        if [ -d "downloader/Server" ]; then
+           mv downloader/Server hytale-mock/release/package/game/latest/
+        fi
+        if [ -f "downloader/Assets.zip" ]; then
+           mv downloader/Assets.zip hytale-mock/release/package/game/latest/
+        fi
+
     - name: Build with Gradle
-      # Note: This will fail if HytaleServer.jar is missing. 
-      # You may need to provide it via a custom mechanism or mock it.
-      run: ./gradlew build
+      run: ./gradlew build -PhytaleHome=$(pwd)/hytale-mock
