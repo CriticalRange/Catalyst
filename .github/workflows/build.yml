@@ -36,15 +36,23 @@ jobs:
         # Download server files
         ./hytale-downloader
         
-        # Verify jar location (debugging)
-        find . -name "HytaleServer.jar"
+        # Unzip the downloaded game files (ignoring the downloader zip itself)
+        # The downloader saves a versioned zip (e.g. 2026...zip)
+        GAME_ZIP=$(find . -maxdepth 1 -name "*.zip" ! -name "hytale-downloader.zip" | head -n 1)
+        if [ -n "$GAME_ZIP" ]; then
+           echo "Extracting $GAME_ZIP..."
+           unzip -q "$GAME_ZIP"
+        fi
         
-        # Install to Maven Local
-        # Note: Path depends on downloader output. Assuming Server/HytaleServer.jar relative to current dir
-        if [ -f "Server/HytaleServer.jar" ]; then
-           mvn install:install-file -Dfile=Server/HytaleServer.jar -DgroupId=com.hypixel.hytale -DartifactId=HytaleServer-parent -Dversion=1.0-SNAPSHOT -Dpackaging=jar
+        # Find the jar recursively (structure might be release/package/game/latest/Server or similar)
+        JAR_PATH=$(find . -name "HytaleServer.jar" | head -n 1)
+        
+        if [ -f "$JAR_PATH" ]; then
+           echo "Found jar at: $JAR_PATH"
+           mvn install:install-file -Dfile="$JAR_PATH" -DgroupId=com.hypixel.hytale -DartifactId=HytaleServer-parent -Dversion=1.0-SNAPSHOT -Dpackaging=jar
         else
-            echo "Error: HytaleServer.jar not found after download!"
+            echo "Error: HytaleServer.jar not found after extraction!"
+            ls -R
             exit 1
         fi
 
