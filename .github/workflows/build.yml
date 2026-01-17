@@ -31,6 +31,7 @@ jobs:
         cd downloader
         wget https://downloader.hytale.com/hytale-downloader.zip
         unzip hytale-downloader.zip
+        mv hytale-downloader-linux-amd64 hytale-downloader
         chmod +x hytale-downloader
         
         # Download server files
