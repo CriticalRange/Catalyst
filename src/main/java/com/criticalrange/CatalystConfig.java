@@ -6,27 +6,7 @@ package com.criticalrange;
  * <p>Allows runtime toggling of all optimization features. All fields are volatile
  * to ensure thread-safe reads without explicit synchronization.</p>
  *
- * <p>Core Optimizations:</p>
- * <ul>
- *   <li>{@link #TICK_OPTIMIZATION_ENABLED} - Distributes entity updates across multiple ticks</li>
- *   <li>{@link #ENTITY_TRACKING_ENABLED} - Batches packet sends under load</li>
- *   <li>{@link #CHUNK_CACHE_ENABLED} - Tracks chunk I/O metrics</li>
- * </ul>
- *
- * <p>Advanced Optimizations:</p>
- * <ul>
- *   <li>{@link #LIGHTING_OPTIMIZATION_ENABLED} - Rate-lights propagation calculations</li>
- *   <li>{@link #MOVEMENT_OPTIMIZATION_ENABLED} - Throttles location/state updates</li>
- *   <li>{@link #NETWORK_OPTIMIZATION_ENABLED} - Adaptive packet flush batching</li>
- * </ul>
- *
- * <p>Aggressive Optimizations:</p>
- * <ul>
- *   <li>{@link #PHYSICS_OPTIMIZATION_ENABLED} - Throttles collision and item physics</li>
- *   <li>{@link #AI_OPTIMIZATION_ENABLED} - Distributes NPC behavior updates</li>
- * </ul>
- *
- * <p>Chunk Loading Optimizations:</p>
+ * <p>Chunk Loading Optimizations (Lazy Loading):</p>
  * <ul>
  *   <li>{@link #LAZY_BLOCK_ENTITIES_ENABLED} - Defers block entity creation until accessed</li>
  *   <li>{@link #LAZY_BLOCK_TICK_ENABLED} - Defers ticking block discovery</li>
@@ -41,37 +21,7 @@ public class CatalystConfig {
     private CatalystConfig() {
     }
 
-    // ========== Core Optimizations ==========
-
-    /** Enables tick optimization - distributes entity updates across multiple ticks */
-    public static volatile boolean TICK_OPTIMIZATION_ENABLED = true;
-
-    /** Enables entity tracking optimization - batches packet sends under load */
-    public static volatile boolean ENTITY_TRACKING_ENABLED = true;
-
-    /** Enables chunk caching and metrics tracking */
-    public static volatile boolean CHUNK_CACHE_ENABLED = true;
-
-    // ========== Advanced Optimizations ==========
-
-    /** Enables lighting optimization - rate-limits propagation calculations */
-    public static volatile boolean LIGHTING_OPTIMIZATION_ENABLED = true;
-
-    /** Enables movement optimization - throttles location/state updates */
-    public static volatile boolean MOVEMENT_OPTIMIZATION_ENABLED = true;
-
-    /** Enables network optimization - adaptive packet flush batching */
-    public static volatile boolean NETWORK_OPTIMIZATION_ENABLED = true;
-
-    // ========== Aggressive Optimizations ==========
-
-    /** Enables physics optimization - throttles collision and item physics */
-    public static volatile boolean PHYSICS_OPTIMIZATION_ENABLED = true;
-
-    /** Enables AI optimization - distributes NPC behavior updates */
-    public static volatile boolean AI_OPTIMIZATION_ENABLED = true;
-
-    // ========== Chunk Loading Optimizations ==========
+    // ========== Chunk Loading Optimizations (Lazy Loading) ==========
 
     /**
      * Enables lazy block entity initialization.

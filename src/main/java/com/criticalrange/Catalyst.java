@@ -12,12 +12,17 @@ import javax.annotation.Nonnull;
  *
  * <p>Optimizes server performance through bytecode manipulation.</p>
  *
+ * <p>Current optimizations:</p>
+ * <ul>
+ *   <li>Lazy block entity initialization - defers creation until needed</li>
+ *   <li>Lazy block tick discovery - defers ticking block detection</li>
+ *   <li>Lazy fluid pre-processing - defers fluid simulation during chunk load</li>
+ * </ul>
+ *
  * @author CriticalRange
- * @version 2.0.0
  */
 public class Catalyst extends JavaPlugin {
 
-    public static final String VERSION = "2.0.0";
     private static Catalyst instance;
     private CatalystTransformerManager transformerManager;
 
@@ -30,6 +35,19 @@ public class Catalyst extends JavaPlugin {
         return instance;
     }
 
+    /**
+     * Gets the version from the plugin manifest (set by gradle.properties).
+     *
+     * @return The version string, or "unknown" if not available
+     */
+    public String getVersion() {
+        try {
+            return getManifest().getVersion().toString();
+        } catch (Exception e) {
+            return "unknown";
+        }
+    }
+
     @Override
     protected void setup() {
         transformerManager = new CatalystTransformerManager();
@@ -40,7 +58,7 @@ public class Catalyst extends JavaPlugin {
             log("Failed to register command: " + t.getMessage());
         }
 
-        log("Catalyst " + VERSION + " initialized.");
+        log("Catalyst " + getVersion() + " initialized.");
     }
 
     @Override
@@ -60,21 +78,11 @@ public class Catalyst extends JavaPlugin {
     }
 
     private void logConfig() {
-        log("Active Optimizations:");
-        log("  [+] Core: Tick(" + s(CatalystConfig.TICK_OPTIMIZATION_ENABLED) + 
-            "), Entity(" + s(CatalystConfig.ENTITY_TRACKING_ENABLED) + 
-            "), Chunk(" + s(CatalystConfig.CHUNK_CACHE_ENABLED) + ")");
-            
-        log("  [+] Advanced: Light(" + s(CatalystConfig.LIGHTING_OPTIMIZATION_ENABLED) + 
-            "), Move(" + s(CatalystConfig.MOVEMENT_OPTIMIZATION_ENABLED) + 
-            "), Net(" + s(CatalystConfig.NETWORK_OPTIMIZATION_ENABLED) + ")");
-            
-        log("  [+] Aggressive: Phys(" + s(CatalystConfig.PHYSICS_OPTIMIZATION_ENABLED) + 
-            "), AI(" + s(CatalystConfig.AI_OPTIMIZATION_ENABLED) + ")");
-            
-        log("  [+] Deferred: Entities(" + s(CatalystConfig.LAZY_BLOCK_ENTITIES_ENABLED) + 
-            "), Tick(" + s(CatalystConfig.LAZY_BLOCK_TICK_ENABLED) + 
-            "), Fluid(" + s(CatalystConfig.LAZY_FLUID_ENABLED) + ")");
+        log("Configuration:");
+        log("  Lazy Loading:");
+        log("    - Block Entities: " + s(CatalystConfig.LAZY_BLOCK_ENTITIES_ENABLED));
+        log("    - Block Tick: " + s(CatalystConfig.LAZY_BLOCK_TICK_ENABLED));
+        log("    - Fluid: " + s(CatalystConfig.LAZY_FLUID_ENABLED));
     }
 
     private String s(boolean enabled) {

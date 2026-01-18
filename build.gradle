@@ -74,11 +74,7 @@ def assetsPath = hytaleBaseDir + "/" + patchline + "/package/game/latest/Assets.
 
 dependencies {
     testImplementation 'org.junit.jupiter:junit-jupiter:5.10.0'
-    
-    // Auto-detect Maven requirement:
-    // 1. Explicit flag (-PuseMavenHytale)
-    // 2. CI environment (GITHUB_ACTIONS)
-    // 3. Local file missing (fallback to Maven)
+
     def useMaven = project.hasProperty('useMavenHytale') || System.getenv('GITHUB_ACTIONS') != null
     if (!useMaven && !file(hytaleServerPath).exists()) {
         useMaven = true
@@ -283,16 +279,13 @@ task runServer(type: JavaExec) {
         file("$runDir/mods").mkdirs()
 
         // Copy JAR to both earlyplugins and mods directories
-        def pluginSrc = file("${hytaleBaseDir}/earlyplugins/Catalyst-1.0.0.jar")
-        if (pluginSrc.exists()) {
-            copy {
-                from pluginSrc
-                into file("$runDir/earlyplugins")
-            }
-            copy {
-                from pluginSrc
-                into file("$runDir/mods")
-            }
+        copy {
+            from jar.archiveFile
+            into file("$runDir/earlyplugins")
+        }
+        copy {
+            from jar.archiveFile
+            into file("$runDir/mods")
         }
 
         logger.lifecycle("Starting Hytale server...")

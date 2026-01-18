@@ -1,8 +1,3 @@
-com.criticalrange.transformer.ServerTickTransformer
-com.criticalrange.transformer.WorldGenNetworkTransformer
-com.criticalrange.transformer.DeferredBlockEntityTransformer
-com.criticalrange.transformer.DeferredBlockTickTransformer
-com.criticalrange.transformer.DeferredFluidTransformer
-com.criticalrange.transformer.BatchBlockEntityTransformer
-com.criticalrange.transformer.BlockTypeCacheTransformer
-com.criticalrange.transformer.HitboxExtentTransformer
+com.criticalrange.transformer.LazyBlockEntityTransformer
+com.criticalrange.transformer.LazyBlockTickTransformer
+com.criticalrange.transformer.LazyFluidTransformer

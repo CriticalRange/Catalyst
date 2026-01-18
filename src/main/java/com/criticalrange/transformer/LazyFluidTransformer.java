@@ -3,24 +3,25 @@ package com.criticalrange.transformer;
 import org.objectweb.asm.*;
 
 /**
- * Lazy Fluid Processing Transformer
+ * Lazy Fluid Processing Transformer.
  *
- * Optimizes chunk loading by skipping the expensive FluidPlugin onChunkPreProcess
- * that iterates through 32,768 blocks per section AND runs up to 100 simulation ticks.
+ * <p>Optimizes chunk loading by deferring fluid pre-simulation.
+ * Instead of running up to 100 simulation ticks per chunk during pre-load,
+ * fluids are processed normally during regular gameplay.</p>
  *
- * Target: FluidPlugin.onChunkPreProcess
+ * <p>Target: FluidPlugin.onChunkPreProcess</p>
  *
- * This transformer injects a static boolean flag directly into FluidPlugin
- * to allow runtime toggling of the optimization.
+ * <p>This is a TRUE optimization because:</p>
+ * <ul>
+ *   <li>Chunk generation is MASSIVELY faster (100+ simulation ticks saved)</li>
+ *   <li>Fluids still flow correctly during normal gameplay</li>
+ *   <li>32,768 block iteration per section is avoided</li>
+ *   <li>Complex fluid spread calculations are deferred</li>
+ * </ul>
+ *
+ * <p><b>Note:</b> Water/lava may take a moment to start flowing in newly loaded chunks.</p>
  */
 public class LazyFluidTransformer extends BaseTransformer {
-
-    private static final boolean DEBUG = true;
-
-    // Static initializer to verify loading
-    static {
-        System.out.println("[Catalyst:LazyFluid] LazyFluidTransformer loaded!");
-    }
 
     @Override
     public String getName() {
@@ -29,13 +30,11 @@ public class LazyFluidTransformer extends BaseTransformer {
 
     @Override
     public int priority() {
-        // Run early to prevent expensive processing
         return -130;
     }
 
     @Override
     protected boolean shouldTransform(String className) {
-        // Target the FluidPlugin class
         return className.equals("com.hypixel.hytale.builtin.fluid.FluidPlugin");
     }
 
@@ -44,11 +43,6 @@ public class LazyFluidTransformer extends BaseTransformer {
         return new FluidPluginClassVisitor(classWriter);
     }
 
-    /**
-     * ClassVisitor that:
-     * 1. Adds a static boolean field $catalystLazyFluid to FluidPlugin
-     * 2. Wraps onChunkPreProcess with the flag check
-     */
     private static class FluidPluginClassVisitor extends ClassVisitor {
 
         private boolean addedField = false;
@@ -59,14 +53,13 @@ public class LazyFluidTransformer extends BaseTransformer {
 
         @Override
         public void visitEnd() {
-            // Add a static field to control lazy fluid processing
             if (!addedField) {
                 FieldVisitor fv = cv.visitField(
                     Opcodes.ACC_PUBLIC | Opcodes.ACC_STATIC,
                     "$catalystLazyFluid",
                     "Z",
                     null,
-                    false  // Default value: false (disabled by default for safety)
+                    false  // Default: disabled for safety
                 );
                 if (fv != null) {
                     fv.visitEnd();
@@ -81,11 +74,7 @@ public class LazyFluidTransformer extends BaseTransformer {
                                          String signature, String[] exceptions) {
             MethodVisitor mv = super.visitMethod(access, name, descriptor, signature, exceptions);
 
-            // Target: onChunkPreProcess(ChunkPreLoadProcessEvent)
             if (name.equals("onChunkPreProcess")) {
-                if (DEBUG) {
-                    System.out.println("[Catalyst:LazyFluid] Found onChunkPreProcess - injecting lazy check");
-                }
                 return new LazyCheckMethodVisitor(mv);
             }
 
@@ -94,14 +83,10 @@ public class LazyFluidTransformer extends BaseTransformer {
     }
 
     /**
-     * MethodVisitor that injects a check at the start of the method.
+     * Injects a check to skip expensive fluid pre-simulation.
      *
-     * Injected bytecode:
-     * 1. Get FluidPlugin.$catalystLazyFluid
-     * 2. If true, return early (skip fluid pre-processing)
-     * 3. Otherwise, continue with original method
-     *
-     * This avoids the expensive 32,768 block iteration per section + 100 tick simulation.
+     * <p>When enabled, returns immediately without running fluid simulation.
+     * Fluids will process normally during regular gameplay ticks.</p>
      */
     private static class LazyCheckMethodVisitor extends MethodVisitor {
 
@@ -113,29 +98,20 @@ public class LazyFluidTransformer extends BaseTransformer {
         public void visitCode() {
             super.visitCode();
 
-            // Inject: if (FluidPlugin.$catalystLazyFluid) return;
-
-            // Get the static field from FluidPlugin
+            // if (FluidPlugin.$catalystLazyFluid) return;
             mv.visitFieldInsn(Opcodes.GETSTATIC,
                 "com/hypixel/hytale/builtin/fluid/FluidPlugin",
                 "$catalystLazyFluid",
                 "Z"
             );
 
-            // If false (not enabled), skip to original code
             Label continueLabel = new Label();
             mv.visitJumpInsn(Opcodes.IFEQ, continueLabel);
 
-            // If enabled, return early
             mv.visitInsn(Opcodes.RETURN);
 
-            // Label for continuing with original method
             mv.visitLabel(continueLabel);
             mv.visitFrame(Opcodes.F_SAME, 0, null, 0, null);
-
-            if (DEBUG) {
-                System.out.println("[Catalyst:LazyFluid] Injected lazy check - use /catalyst toggle fluidlazy to enable");
-            }
         }
     }
 }

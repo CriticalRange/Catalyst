@@ -15,22 +15,19 @@ import java.util.concurrent.CompletableFuture;
 
 /**
  * Main command for Catalyst mod.
- * 
- * Usage:
- *   /catalyst - Show performance report
- *   /catalyst menu - Open settings GUI
- *   /catalyst toggle [feature] - Toggle a feature on/off
- *   /catalyst reset - Reset all statistics
- *   /catalyst tps - Show current TPS
- *   /catalyst config - Show current configuration
+ *
+ * <p>Usage:</p>
+ * <ul>
+ *   <li>/catalyst - Show performance report</li>
+ *   <li>/catalyst menu - Open settings GUI</li>
+ *   <li>/catalyst toggle [feature] - Toggle lazy loading optimization</li>
+ *   <li>/catalyst config - Show current configuration</li>
+ * </ul>
  */
 public class CatalystCommand extends AbstractAsyncCommand {
 
-    /**
-     * Creates a new Catalyst command.
-     */
     public CatalystCommand() {
-        super("catalyst", "View Catalyst performance metrics");
+        super("catalyst", "View Catalyst performance metrics and toggle optimizations");
         this.setAllowsExtraArguments(true);
     }
 
@@ -45,7 +42,7 @@ public class CatalystCommand extends AbstractAsyncCommand {
             switch (subCmd) {
                 case "menu":
                     return openMenuAsync(context);
-                    
+
                 case "toggle":
                     if (args.length > 2) {
                         handleToggle(context, args[2].toLowerCase());
@@ -53,27 +50,15 @@ public class CatalystCommand extends AbstractAsyncCommand {
                         showToggleHelp(context);
                     }
                     return CompletableFuture.completedFuture(null);
-                    
-                case "reset":
-                    CatalystMetrics.reset();
-                    context.sendMessage(Message.raw("Statistics reset successfully.").color("green"));
-                    return CompletableFuture.completedFuture(null);
-                    
-                case "tps":
-                    double tps = CatalystMetrics.getCurrentTPS();
-                    String tpsColor = tps > 19 ? "green" : (tps > 17 ? "yellow" : "red");
-                    context.sendMessage(Message.raw(String.format("Current TPS: %.2f", tps)).color(tpsColor));
-                    context.sendMessage(Message.raw(String.format("Total ticks: %d", CatalystMetrics.getTickCount())));
-                    return CompletableFuture.completedFuture(null);
-                    
+
                 case "config":
                     showConfig(context);
                     return CompletableFuture.completedFuture(null);
-                    
+
                 case "help":
                     showHelp(context);
                     return CompletableFuture.completedFuture(null);
-                    
+
                 default:
                     context.sendMessage(Message.raw("Unknown subcommand: " + subCmd).color("red"));
                     showHelp(context);
@@ -89,39 +74,33 @@ public class CatalystCommand extends AbstractAsyncCommand {
     }
 
     private void showHelp(CommandContext context) {
-        context.sendMessage(Message.raw("§e=== Catalyst Commands ==="));
-        context.sendMessage(Message.raw("§f/catalyst §7- Show performance report"));
-        context.sendMessage(Message.raw("§f/catalyst tps §7- Show current TPS"));
-        context.sendMessage(Message.raw("§f/catalyst config §7- Show configuration"));
-        context.sendMessage(Message.raw("§f/catalyst toggle <feature> §7- Toggle optimization"));
-        context.sendMessage(Message.raw("§f/catalyst reset §7- Reset statistics"));
-        context.sendMessage(Message.raw("§f/catalyst menu §7- Open settings GUI"));
+        context.sendMessage(Message.raw("=== Catalyst Commands ===").color("yellow"));
+        context.sendMessage(Message.raw("/catalyst - Show performance report"));
+        context.sendMessage(Message.raw("/catalyst config - Show configuration"));
+        context.sendMessage(Message.raw("/catalyst toggle <feature> - Toggle lazy loading"));
+        context.sendMessage(Message.raw("/catalyst menu - Open settings GUI"));
     }
 
     private void showToggleHelp(CommandContext context) {
-        context.sendMessage(Message.raw("§eUsage: /catalyst toggle <feature>"));
-        context.sendMessage(Message.raw("§fAvailable features:"));
-        context.sendMessage(Message.raw("  §7tick, tracking, movement, lighting, physics, ai, network, lazy, ticklazy, fluidlazy"));
+        context.sendMessage(Message.raw("Usage: /catalyst toggle <feature>").color("yellow"));
+        context.sendMessage(Message.raw("Available features:"));
+        context.sendMessage(Message.raw("  lazy - Lazy block entity initialization"));
+        context.sendMessage(Message.raw("  ticklazy - Lazy block tick discovery"));
+        context.sendMessage(Message.raw("  fluidlazy - Lazy fluid pre-processing"));
     }
 
     private void showConfig(CommandContext context) {
-        context.sendMessage(Message.raw("§e=== Catalyst Configuration ==="));
-        context.sendMessage(configLine("Tick Optimization", CatalystConfig.TICK_OPTIMIZATION_ENABLED));
-        context.sendMessage(configLine("Entity Tracking", CatalystConfig.ENTITY_TRACKING_ENABLED));
-        context.sendMessage(configLine("Chunk Cache", CatalystConfig.CHUNK_CACHE_ENABLED));
-        context.sendMessage(configLine("Lighting Optimization", CatalystConfig.LIGHTING_OPTIMIZATION_ENABLED));
-        context.sendMessage(configLine("Movement Optimization", CatalystConfig.MOVEMENT_OPTIMIZATION_ENABLED));
-        context.sendMessage(configLine("Network Optimization", CatalystConfig.NETWORK_OPTIMIZATION_ENABLED));
-        context.sendMessage(configLine("Physics Optimization", CatalystConfig.PHYSICS_OPTIMIZATION_ENABLED));
-        context.sendMessage(configLine("AI Optimization", CatalystConfig.AI_OPTIMIZATION_ENABLED));
+        context.sendMessage(Message.raw("=== Catalyst Configuration ===").color("yellow"));
+        context.sendMessage(Message.raw("-- Lazy Loading (Chunk Optimization) --").color("gray"));
         context.sendMessage(configLine("Lazy Block Entities", CatalystConfig.LAZY_BLOCK_ENTITIES_ENABLED));
         context.sendMessage(configLine("Lazy Block Tick", CatalystConfig.LAZY_BLOCK_TICK_ENABLED));
         context.sendMessage(configLine("Lazy Fluid", CatalystConfig.LAZY_FLUID_ENABLED));
     }
 
     private Message configLine(String name, boolean enabled) {
-        String status = enabled ? "§aENABLED" : "§cDISABLED";
-        return Message.raw("  §f" + name + ": " + status);
+        String status = enabled ? "ENABLED" : "DISABLED";
+        String color = enabled ? "green" : "red";
+        return Message.raw("  " + name + ": " + status).color(color);
     }
 
     private CompletableFuture<Void> openMenuAsync(CommandContext context) {
@@ -160,61 +139,21 @@ public class CatalystCommand extends AbstractAsyncCommand {
         String name = "";
 
         switch (feature) {
-            case "tick":
-                CatalystConfig.TICK_OPTIMIZATION_ENABLED = !CatalystConfig.TICK_OPTIMIZATION_ENABLED;
-                newState = CatalystConfig.TICK_OPTIMIZATION_ENABLED;
-                name = "Tick Optimization";
-                break;
-            case "tracking":
-                CatalystConfig.ENTITY_TRACKING_ENABLED = !CatalystConfig.ENTITY_TRACKING_ENABLED;
-                newState = CatalystConfig.ENTITY_TRACKING_ENABLED;
-                name = "Entity Tracking";
-                break;
-            case "movement":
-                CatalystConfig.MOVEMENT_OPTIMIZATION_ENABLED = !CatalystConfig.MOVEMENT_OPTIMIZATION_ENABLED;
-                newState = CatalystConfig.MOVEMENT_OPTIMIZATION_ENABLED;
-                name = "Movement Optimization";
-                break;
-            case "lighting":
-                CatalystConfig.LIGHTING_OPTIMIZATION_ENABLED = !CatalystConfig.LIGHTING_OPTIMIZATION_ENABLED;
-                newState = CatalystConfig.LIGHTING_OPTIMIZATION_ENABLED;
-                name = "Lighting Optimization";
-                break;
-            case "physics":
-                CatalystConfig.PHYSICS_OPTIMIZATION_ENABLED = !CatalystConfig.PHYSICS_OPTIMIZATION_ENABLED;
-                newState = CatalystConfig.PHYSICS_OPTIMIZATION_ENABLED;
-                name = "Physics Optimization";
-                break;
-            case "ai":
-                CatalystConfig.AI_OPTIMIZATION_ENABLED = !CatalystConfig.AI_OPTIMIZATION_ENABLED;
-                newState = CatalystConfig.AI_OPTIMIZATION_ENABLED;
-                name = "AI Optimization";
-                break;
-            case "network":
-                CatalystConfig.NETWORK_OPTIMIZATION_ENABLED = !CatalystConfig.NETWORK_OPTIMIZATION_ENABLED;
-                newState = CatalystConfig.NETWORK_OPTIMIZATION_ENABLED;
-                name = "Network Optimization";
-                break;
-            case "chunk":
-                CatalystConfig.CHUNK_CACHE_ENABLED = !CatalystConfig.CHUNK_CACHE_ENABLED;
-                newState = CatalystConfig.CHUNK_CACHE_ENABLED;
-                name = "Chunk Cache";
-                break;
             case "lazy":
-                // Toggle lazy block entities using reflection
                 newState = toggleLazyBlockEntities();
                 name = "Lazy Block Entities";
                 break;
+
             case "ticklazy":
-                // Toggle lazy block tick discovery using reflection
                 newState = toggleLazyBlockTick();
                 name = "Lazy Block Tick";
                 break;
+
             case "fluidlazy":
-                // Toggle lazy fluid processing using reflection
                 newState = toggleLazyFluid();
                 name = "Lazy Fluid";
                 break;
+
             default:
                 context.sendMessage(Message.raw("Unknown feature: " + feature).color("red"));
                 showToggleHelp(context);
@@ -228,8 +167,6 @@ public class CatalystCommand extends AbstractAsyncCommand {
 
     /**
      * Toggles the lazy block entities flag in BlockModule using reflection.
-     *
-     * @return The new state (true if enabled, false if disabled)
      */
     private boolean toggleLazyBlockEntities() {
         try {
@@ -238,7 +175,7 @@ public class CatalystCommand extends AbstractAsyncCommand {
             boolean currentState = field.getBoolean(null);
             boolean newState = !currentState;
             field.setBoolean(null, newState);
-            CatalystConfig.LAZY_BLOCK_ENTITIES_ENABLED = newState;  // Keep config in sync for GUI
+            CatalystConfig.LAZY_BLOCK_ENTITIES_ENABLED = newState;
             return newState;
         } catch (Exception e) {
             System.err.println("[Catalyst] Failed to toggle lazy block entities: " + e.getMessage());
@@ -248,8 +185,6 @@ public class CatalystCommand extends AbstractAsyncCommand {
 
     /**
      * Toggles the lazy block tick flag in BlockTickPlugin using reflection.
-     *
-     * @return The new state (true if enabled, false if disabled)
      */
     private boolean toggleLazyBlockTick() {
         try {
@@ -258,7 +193,7 @@ public class CatalystCommand extends AbstractAsyncCommand {
             boolean currentState = field.getBoolean(null);
             boolean newState = !currentState;
             field.setBoolean(null, newState);
-            CatalystConfig.LAZY_BLOCK_TICK_ENABLED = newState;  // Keep config in sync for GUI
+            CatalystConfig.LAZY_BLOCK_TICK_ENABLED = newState;
             return newState;
         } catch (Exception e) {
             System.err.println("[Catalyst] Failed to toggle lazy block tick: " + e.getMessage());
@@ -268,8 +203,6 @@ public class CatalystCommand extends AbstractAsyncCommand {
 
     /**
      * Toggles the lazy fluid flag in FluidPlugin using reflection.
-     *
-     * @return The new state (true if enabled, false if disabled)
      */
     private boolean toggleLazyFluid() {
         try {
@@ -278,7 +211,7 @@ public class CatalystCommand extends AbstractAsyncCommand {
             boolean currentState = field.getBoolean(null);
             boolean newState = !currentState;
             field.setBoolean(null, newState);
-            CatalystConfig.LAZY_FLUID_ENABLED = newState;  // Keep config in sync for GUI
+            CatalystConfig.LAZY_FLUID_ENABLED = newState;
             return newState;
         } catch (Exception e) {
             System.err.println("[Catalyst] Failed to toggle lazy fluid: " + e.getMessage());
