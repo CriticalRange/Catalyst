@@ -1,0 +1,10 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "com.criticalrange.mixin",
+  "mixins": [
+    "BlockModuleMixin",
+    "BlockTickPluginMixin",
+    "FluidPluginMixin"
+  ]
+}

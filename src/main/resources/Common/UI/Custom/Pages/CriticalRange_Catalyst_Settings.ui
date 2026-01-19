@@ -7,7 +7,7 @@ $C.@PageOverlay {
 
     #Title {
       $C.@Title {
-        @Text = "CATALYT SETTINGS";
+        @Text = "CATALYST SETTINGS";
       }
     }
 

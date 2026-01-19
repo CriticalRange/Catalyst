@@ -3,12 +3,19 @@ plugins {
     id 'maven-publish'
     id 'org.jetbrains.gradle.plugin.idea-ext' version '1.3'
     id "com.matthewprenger.cursegradle" version "1.4.0"
+    id 'com.gradleup.shadow' version '9.0.0-beta4'
 }
 
 java {
     toolchain.languageVersion = JavaLanguageVersion.of(java_version)
     withSourcesJar()
     withJavadocJar()
+}
+
+// Compile to Java 21 bytecode for Hyxin/Mixin ASM compatibility
+// Hyxin runs on Java 25 but its bundled ASM doesn't support Java 25 class files
+tasks.withType(JavaCompile).configureEach {
+    options.release = 21
 }
 
 // Configure javadoc and sources JARs to output to build/docs instead of build/libs
@@ -87,59 +94,72 @@ dependencies {
     }
     
     // ASM for bytecode manipulation (Early Plugin class transformation)
-    implementation 'org.ow2.asm:asm:9.7'
-    implementation 'org.ow2.asm:asm-commons:9.7'
-    implementation 'org.ow2.asm:asm-util:9.7'
-    implementation 'org.ow2.asm:asm-tree:9.7'
+    // These will be relocated to com.criticalrange.asm to avoid conflicts with Hyxin
+    shadow 'org.ow2.asm:asm:9.7'
+    shadow 'org.ow2.asm:asm-commons:9.7'
+    shadow 'org.ow2.asm:asm-util:9.7'
+    shadow 'org.ow2.asm:asm-tree:9.7'
+    
+    // Also add as compileOnly for IDE support
+    compileOnly 'org.ow2.asm:asm:9.7'
+    compileOnly 'org.ow2.asm:asm-commons:9.7'
+    compileOnly 'org.ow2.asm:asm-util:9.7'
+    compileOnly 'org.ow2.asm:asm-tree:9.7'
+    
+    // Mixin for Hyxin compatibility (compile-only, provided by Hyxin at runtime)
+    compileOnly 'net.fabricmc:sponge-mixin:0.15.4+mixin.0.8.7'
 }
 
-// Configure JAR to include ASM dependencies (shade them)
+// Configure Shadow JAR to relocate ASM to avoid conflicts with Hyxin
+shadowJar {
+    archiveClassifier.set('')  // Replace the regular jar
+    
+    // Relocate ASM to our own package to avoid conflicts with Hyxin's bundled ASM
+    relocate 'org.objectweb.asm', 'com.criticalrange.asm'
+    
+    configurations = [project.configurations.shadow]
+    
+    // Merge service files
+    mergeServiceFiles()
+    
+    // Exclude unnecessary files
+    exclude 'META-INF/*.SF'
+    exclude 'META-INF/*.DSA'
+    exclude 'META-INF/*.RSA'
+    exclude 'META-INF/MANIFEST.MF'
+    exclude 'META-INF/maven/**'
+    // Don't include HytaleServer classes or manifests
+    exclude 'com/hypixel/**'
+    exclude 'manifests.json'
+}
+
+// Make jar task depend on shadowJar
 jar {
-    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
-    from {
-        configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
-    } {
-        exclude 'META-INF/*.SF'
-        exclude 'META-INF/*.DSA'
-        exclude 'META-INF/*.RSA'
-        exclude 'META-INF/MANIFEST.MF'
-        // Don't include HytaleServer classes or manifests
-        exclude 'com/hypixel/**'
-        exclude 'manifests.json'
-    }
+    enabled = false
+    dependsOn shadowJar
 }
 
 // Task to deploy to early-plugins directory (for class transformers)
 task deployEarlyPlugin(type: Copy) {
     group = 'Hytale'
-    description = 'Deploys the mod to earlyplugins (transformers) AND mods (commands) directories'
-    dependsOn jar
+    description = 'Deploys the mod to earlyplugins directory'
+    dependsOn shadowJar
 
     // Note: Hytale uses "earlyplugins" (no hyphen) as the default directory
     def earlyPluginsDir = file("${hytaleBaseDir}/earlyplugins")
-    def modsDir = file("${hytaleBaseDir}/mods")
 
-    from jar.archiveFile
+    from shadowJar.archiveFile
     into earlyPluginsDir
 
     doFirst {
         if (!earlyPluginsDir.exists()) {
             earlyPluginsDir.mkdirs()
         }
-        if (!modsDir.exists()) {
-            modsDir.mkdirs()
-        }
-        logger.lifecycle("Deploying Catalyst to: ${earlyPluginsDir} (transformers)")
-        logger.lifecycle("                    AND: ${modsDir} (commands)")
+        logger.lifecycle("Deploying Catalyst to: ${earlyPluginsDir}")
         logger.lifecycle("WARNING: Early plugins have full system access!")
     }
 
     doLast {
-        // Also copy to mods directory for command registration
-        copy {
-            from jar.archiveFile
-            into modsDir
-        }
         logger.lifecycle("Catalyst deployed successfully!")
         logger.lifecycle("Restart the Hytale server to apply changes.")
     }
@@ -206,8 +226,8 @@ clean.doFirst {
 task copyMod(type: Copy) {
     group = 'Hytale'
     description = 'Copies the built mod JAR to the Hytale mods directory'
-    dependsOn jar
-    from jar.archiveFile
+    dependsOn shadowJar
+    from shadowJar.archiveFile
     into file("${hytaleBaseDir}/mods")
     doFirst {
         logger.lifecycle("Copying mod to: ${hytaleBaseDir}/mods/")
@@ -218,8 +238,8 @@ task copyMod(type: Copy) {
 task copyJar(type: Copy) {
     group = 'Hytale'
     description = 'Copies the built mod JAR to the official Hytale mods directory'
-    dependsOn jar
-    from jar.archiveFile
+    dependsOn shadowJar
+    from shadowJar.archiveFile
     into file("${hytaleBaseDir}/mods")
     doFirst {
         logger.lifecycle("Copying mod JAR to official mods directory: ${hytaleBaseDir}/mods/")
@@ -241,12 +261,12 @@ task downloadAssets(type: Copy) {
 task copyModToClient(type: Copy) {
     group = 'Hytale'
     description = 'Copies the built mod to UserData/Mods for testing through the official launcher'
-    dependsOn jar
+    dependsOn shadowJar
 
     def hytaleDataDir = file("${hytaleBaseDir}/..").getCanonicalFile()
     def userDataModsDir = file("${hytaleDataDir}/UserData/Mods")
 
-    from jar.archiveFile
+    from shadowJar.archiveFile
     into userDataModsDir
 
     doFirst {
@@ -262,7 +282,7 @@ task copyModToClient(type: Copy) {
 task runServer(type: JavaExec) {
     group = 'Hytale'
     description = 'Starts the Hytale server with the mod loaded for testing'
-    dependsOn jar, deployEarlyPlugin
+    dependsOn shadowJar, deployEarlyPlugin
 
     mainClass = 'com.hypixel.hytale.Main'
     classpath = files(hytaleServerPath)
@@ -276,22 +296,16 @@ task runServer(type: JavaExec) {
         // Create run directory structure
         runDir.mkdirs()
         file("$runDir/earlyplugins").mkdirs()
-        file("$runDir/mods").mkdirs()
 
-        // Copy JAR to both earlyplugins and mods directories
+        // Copy JAR to earlyplugins directory
         copy {
-            from jar.archiveFile
+            from shadowJar.archiveFile
             into file("$runDir/earlyplugins")
-        }
-        copy {
-            from jar.archiveFile
-            into file("$runDir/mods")
         }
 
         logger.lifecycle("Starting Hytale server...")
         logger.lifecycle("Working directory: ${runDir}")
         logger.lifecycle("Early plugins: ${runDir}/earlyplugins/")
-        logger.lifecycle("Mods: ${runDir}/mods/")
         logger.lifecycle("Server data (universe/, logs/) will be created in ${runDir}")
     }
 
@@ -311,7 +325,7 @@ task runServer(type: JavaExec) {
 task runClient(type: Exec) {
     group = 'Hytale'
     description = 'Starts the Hytale client via official launcher'
-    dependsOn jar, copyModToClient
+    dependsOn shadowJar, copyModToClient
 
     doFirst {
         logger.lifecycle("Mod has been copied to UserData/Mods for singleplayer testing")

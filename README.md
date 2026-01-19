@@ -19,7 +19,6 @@ Right now the project is in early stages. Here's what's implemented:
 | `LazyBlockEntityTransformer` | Defers chest/furnace/sign creation until first access |
 | `LazyBlockTickTransformer` | Postpones tick discovery during chunk preload |
 | `LazyFluidTransformer` | Skips fluid sim during chunk load |
-| `BatchBlockEntityTransformer` | Caches block types and batches entity collection |
 
 Everything's toggleable at runtime via `/catalyst menu`—no restart needed.
 
@@ -74,6 +73,16 @@ All config fields are `volatile` and readable at runtime, so you can flip optimi
 - [Performance Optimizations](docs/PERFORMANCE_OPTIMIZATIONS.md) — Roadmap and planned work
 - [API Reference](docs/HYTALE_API_REFERENCE.md) — Hytale Server Plugin API docs
 - [Early Plugins Guide](docs/ADVANCED_EARLY_PLUGINS.md) — How bytecode transformation works
+
+## Hyxin Compatibility
+
+Catalyst includes optional support for [Hyxin](https://github.com/Darkhax/Hyxin), the Mixin framework for Hytale. When Hyxin is installed alongside Catalyst, the same optimizations are available through Mixin instead of raw ASM transformation.
+
+**Current approach:** Catalyst ships with both ASM transformers and Mixin equivalents. The ASM transformers are the primary method and work standalone. The Mixin versions are there for compatibility and will activate automatically when Hyxin is present.
+
+**Why both?** Hyxin is still in early access and has some known issues being worked on. Once Hyxin reaches a stable release, we plan to transition fully to Mixin-based optimizations. Until then, the ASM transformers ensure Catalyst works reliably regardless of whether Hyxin is installed.
+
+If you're a Hyxin user and run into issues, you can remove Hyxin and Catalyst will fall back to its standalone ASM transformers automatically.
 
 ## Status
 

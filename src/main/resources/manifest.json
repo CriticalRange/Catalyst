@@ -17,5 +17,10 @@
   "DisabledByDefault": false,
   "Main": "${entry_point}",
   "IncludesAssetPack": true,
-  "Icon": "icon.png"
+  "Icon": "icon.png",
+  "Hyxin": {
+    "Configs": [
+      "catalyst.mixins.json"
+    ]
+  }
 }
