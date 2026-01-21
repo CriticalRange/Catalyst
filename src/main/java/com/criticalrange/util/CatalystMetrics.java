@@ -30,13 +30,27 @@ public class CatalystMetrics {
             mem.usedMB(), mem.maxMB(), mem.usagePercent()));
 
         // Lazy loading status
-        sb.append("\n-- Lazy Loading Status --\n");
+        sb.append("\n-- Lazy Loading (Chunk Gen) --\n");
         sb.append(String.format("  Block Entities: %s\n", 
             com.criticalrange.CatalystConfig.LAZY_BLOCK_ENTITIES_ENABLED ? "ENABLED" : "DISABLED"));
         sb.append(String.format("  Block Tick: %s\n", 
             com.criticalrange.CatalystConfig.LAZY_BLOCK_TICK_ENABLED ? "ENABLED" : "DISABLED"));
         sb.append(String.format("  Fluid: %s\n", 
             com.criticalrange.CatalystConfig.LAZY_FLUID_ENABLED ? "ENABLED" : "DISABLED"));
+
+        // Runtime optimizations status
+        sb.append("\n-- Runtime Optimizations --\n");
+        sb.append(String.format("  Entity Distance: %s\n", 
+            com.criticalrange.CatalystConfig.ENTITY_DISTANCE_ENABLED ? "ENABLED" : "DISABLED"));
+        sb.append(String.format("  Chunk Rate: %s\n", 
+            com.criticalrange.CatalystConfig.CHUNK_RATE_ENABLED ? "ENABLED" : "DISABLED"));
+
+        // Configuration values
+        sb.append("\n-- Configuration --\n");
+        sb.append(String.format("  Entity View Multiplier: %d (default 32)\n", 
+            com.criticalrange.CatalystConfig.ENTITY_VIEW_MULTIPLIER));
+        sb.append(String.format("  Chunks Per Tick: %d (default 4)\n", 
+            com.criticalrange.CatalystConfig.CHUNKS_PER_TICK));
 
         sb.append("==============================================\n");
 

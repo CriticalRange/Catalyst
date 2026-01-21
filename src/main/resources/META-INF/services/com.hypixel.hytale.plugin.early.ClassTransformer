@@ -1,3 +1,6 @@
 com.criticalrange.transformer.LazyBlockEntityTransformer
 com.criticalrange.transformer.LazyBlockTickTransformer
 com.criticalrange.transformer.LazyFluidTransformer
+com.criticalrange.transformer.EntityDistanceTransformer
+com.criticalrange.transformer.ChunkRateTransformer
+com.criticalrange.transformer.PathfindingConfigTransformer

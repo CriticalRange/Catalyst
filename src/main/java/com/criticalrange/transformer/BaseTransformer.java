@@ -62,9 +62,6 @@ public abstract class BaseTransformer implements ClassTransformer {
 
     @Override
     public byte[] transform(String className, String classLoaderName, byte[] classBytes) {
-        // Debug: Log every class being checked (limited to avoid spam)
-
-
         // Skip if disabled
         if (!enabled) {
             return classBytes;
@@ -73,10 +70,6 @@ public abstract class BaseTransformer implements ClassTransformer {
         // Check if we should transform this class
         if (!shouldTransform(className)) {
             return classBytes;
-        }
-
-        if (DEBUG) {
-            System.out.println("[Catalyst:" + getName() + "] Transforming class: " + className);
         }
 
         long startTime = System.nanoTime();

@@ -2,6 +2,34 @@
 
 All notable changes to Catalyst will be documented in this file.
 
+## [0.2.0] - 2026-01-21
+
+### Added
+- **Entity Distance Control**: Configurable entity view distance multiplier (default: 1.0)
+  - Adjusts how far entities are visible/processed
+  - Lower values improve server performance
+- **Chunk Rate Control**: Configurable chunks processed per tick (default: 1)
+  - Limits chunk loading speed to prevent server lag spikes
+- **Pathfinding Optimization**: Configurable pathfinding timeout reduction (default: 50%)
+  - Reduces CPU usage from entity pathfinding calculations
+- **Reset to Defaults Button**: One-click reset in settings GUI to restore all defaults
+- **Optimization Metrics**: Track performance impact of enabled optimizations
+
+### Changed
+- **UI Redesign**: Complete settings UI overhaul following Hytale design patterns
+  - Organized into logical sections with color-coded headers
+  - Fixed position elements (reset button at bottom)
+  - Removed missing texture references that caused red backgrounds
+  - Improved layout with proper scrolling sections
+- **Slider Values Fixed**: Corrected property type from `.Text` to `.Value` for numeric sliders
+- **Improved transformer base class**: Better error handling and logging
+
+### Fixed
+- Fixed slider value setting error (now uses correct `.Value` property)
+- Fixed red background in UI sections (removed missing texture reference)
+- Fixed reset button position (now at fixed bottom position, not scrolling)
+- Fixed checkbox value binding in settings UI
+
 ## [0.1.1] - 2026-01-19
 
 ### Added

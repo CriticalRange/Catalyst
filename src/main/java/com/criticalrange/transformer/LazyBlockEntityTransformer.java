@@ -42,12 +42,33 @@ public class LazyBlockEntityTransformer extends BaseTransformer {
         return new BlockModuleClassVisitor(classWriter);
     }
 
+    private static final String TARGET_CLASS_INTERNAL = "com/hypixel/hytale/server/core/modules/block/BlockModule";
+    private static final String LAZY_FIELD = "$catalystLazyBlockEntities";
+
     private static class BlockModuleClassVisitor extends ClassVisitor {
 
         private boolean addedField = false;
+        private boolean hasStaticInit = false;
 
         public BlockModuleClassVisitor(ClassWriter classWriter) {
             super(ASM_VERSION, classWriter);
+        }
+
+        @Override
+        public MethodVisitor visitMethod(int access, String name, String descriptor,
+                                         String signature, String[] exceptions) {
+            MethodVisitor mv = super.visitMethod(access, name, descriptor, signature, exceptions);
+
+            if (name.equals("<clinit>")) {
+                hasStaticInit = true;
+                return new StaticInitMethodVisitor(mv);
+            }
+
+            if (name.equals("onChunkPreLoadProcessEnsureBlockEntity")) {
+                return new LazyCheckMethodVisitor(mv);
+            }
+
+            return mv;
         }
 
         @Override
@@ -56,29 +77,56 @@ public class LazyBlockEntityTransformer extends BaseTransformer {
             if (!addedField) {
                 FieldVisitor fv = cv.visitField(
                     Opcodes.ACC_PUBLIC | Opcodes.ACC_STATIC,
-                    "$catalystLazyBlockEntities",
+                    LAZY_FIELD,
                     "Z",
                     null,
-                    false  // Default: disabled for safety
+                    null
                 );
                 if (fv != null) {
                     fv.visitEnd();
                 }
                 addedField = true;
             }
+
+            // If class has no static initializer, create one with default value (false)
+            if (!hasStaticInit) {
+                MethodVisitor mv = cv.visitMethod(
+                    Opcodes.ACC_STATIC,
+                    "<clinit>",
+                    "()V",
+                    null,
+                    null
+                );
+                mv.visitCode();
+                // Default: false (disabled) - will be updated via reflection when plugin loads
+                mv.visitInsn(Opcodes.ICONST_0);
+                mv.visitFieldInsn(Opcodes.PUTSTATIC, TARGET_CLASS_INTERNAL, LAZY_FIELD, "Z");
+                mv.visitInsn(Opcodes.RETURN);
+                mv.visitMaxs(1, 0);
+                mv.visitEnd();
+            }
+
             super.visitEnd();
+        }
+    }
+
+    /**
+     * Injects field initialization into existing static initializer.
+     * Uses literal default value (false) - updated via reflection when plugin loads.
+     */
+    private static class StaticInitMethodVisitor extends MethodVisitor {
+
+        public StaticInitMethodVisitor(MethodVisitor mv) {
+            super(ASM_VERSION, mv);
         }
 
         @Override
-        public MethodVisitor visitMethod(int access, String name, String descriptor,
-                                         String signature, String[] exceptions) {
-            MethodVisitor mv = super.visitMethod(access, name, descriptor, signature, exceptions);
+        public void visitCode() {
+            super.visitCode();
 
-            if (name.equals("onChunkPreLoadProcessEnsureBlockEntity")) {
-                return new LazyCheckMethodVisitor(mv);
-            }
-
-            return mv;
+            // Default: false (disabled) - will be updated via reflection when plugin loads
+            mv.visitInsn(Opcodes.ICONST_0);
+            mv.visitFieldInsn(Opcodes.PUTSTATIC, TARGET_CLASS_INTERNAL, LAZY_FIELD, "Z");
         }
     }
 
@@ -87,6 +135,9 @@ public class LazyBlockEntityTransformer extends BaseTransformer {
      *
      * <p>When enabled, the method returns immediately without iterating blocks.
      * Block entities will be created on-demand when accessed.</p>
+     * 
+     * <p><b>Warning:</b> This optimization is risky. Block entities may not be created
+     * on-demand automatically. Only enable if you've verified this works correctly.</p>
      */
     private static class LazyCheckMethodVisitor extends MethodVisitor {
 
@@ -100,8 +151,8 @@ public class LazyBlockEntityTransformer extends BaseTransformer {
 
             // if (BlockModule.$catalystLazyBlockEntities) return;
             mv.visitFieldInsn(Opcodes.GETSTATIC,
-                "com/hypixel/hytale/server/core/modules/block/BlockModule",
-                "$catalystLazyBlockEntities",
+                TARGET_CLASS_INTERNAL,
+                LAZY_FIELD,
                 "Z"
             );
 
@@ -111,7 +162,7 @@ public class LazyBlockEntityTransformer extends BaseTransformer {
             mv.visitInsn(Opcodes.RETURN);
 
             mv.visitLabel(continueLabel);
-            mv.visitFrame(Opcodes.F_SAME, 0, null, 0, null);
+            // Frame computed automatically by COMPUTE_FRAMES
         }
     }
 }

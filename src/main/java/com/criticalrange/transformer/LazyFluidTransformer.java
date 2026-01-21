@@ -43,30 +43,16 @@ public class LazyFluidTransformer extends BaseTransformer {
         return new FluidPluginClassVisitor(classWriter);
     }
 
+    private static final String TARGET_CLASS_INTERNAL = "com/hypixel/hytale/builtin/fluid/FluidPlugin";
+    private static final String LAZY_FIELD = "$catalystLazyFluid";
+
     private static class FluidPluginClassVisitor extends ClassVisitor {
 
         private boolean addedField = false;
+        private boolean hasStaticInit = false;
 
         public FluidPluginClassVisitor(ClassWriter classWriter) {
             super(ASM_VERSION, classWriter);
-        }
-
-        @Override
-        public void visitEnd() {
-            if (!addedField) {
-                FieldVisitor fv = cv.visitField(
-                    Opcodes.ACC_PUBLIC | Opcodes.ACC_STATIC,
-                    "$catalystLazyFluid",
-                    "Z",
-                    null,
-                    false  // Default: disabled for safety
-                );
-                if (fv != null) {
-                    fv.visitEnd();
-                }
-                addedField = true;
-            }
-            super.visitEnd();
         }
 
         @Override
@@ -74,11 +60,74 @@ public class LazyFluidTransformer extends BaseTransformer {
                                          String signature, String[] exceptions) {
             MethodVisitor mv = super.visitMethod(access, name, descriptor, signature, exceptions);
 
+            if (name.equals("<clinit>")) {
+                hasStaticInit = true;
+                return new StaticInitMethodVisitor(mv);
+            }
+
             if (name.equals("onChunkPreProcess")) {
                 return new LazyCheckMethodVisitor(mv);
             }
 
             return mv;
+        }
+
+        @Override
+        public void visitEnd() {
+            if (!addedField) {
+                // Add the field (value will be set in <clinit>)
+                FieldVisitor fv = cv.visitField(
+                    Opcodes.ACC_PUBLIC | Opcodes.ACC_STATIC,
+                    LAZY_FIELD,
+                    "Z",
+                    null,
+                    null
+                );
+                if (fv != null) {
+                    fv.visitEnd();
+                }
+                addedField = true;
+            }
+
+            // If class has no static initializer, create one with default value (false)
+            if (!hasStaticInit) {
+                MethodVisitor mv = cv.visitMethod(
+                    Opcodes.ACC_STATIC,
+                    "<clinit>",
+                    "()V",
+                    null,
+                    null
+                );
+                mv.visitCode();
+                // Default: false (disabled) - will be updated via reflection when plugin loads
+                mv.visitInsn(Opcodes.ICONST_0);
+                mv.visitFieldInsn(Opcodes.PUTSTATIC, TARGET_CLASS_INTERNAL, LAZY_FIELD, "Z");
+                mv.visitInsn(Opcodes.RETURN);
+                mv.visitMaxs(1, 0);
+                mv.visitEnd();
+            }
+
+            super.visitEnd();
+        }
+    }
+
+    /**
+     * Injects field initialization into existing static initializer.
+     * Uses literal default value (false) - updated via reflection when plugin loads.
+     */
+    private static class StaticInitMethodVisitor extends MethodVisitor {
+
+        public StaticInitMethodVisitor(MethodVisitor mv) {
+            super(ASM_VERSION, mv);
+        }
+
+        @Override
+        public void visitCode() {
+            super.visitCode();
+
+            // Default: false (disabled) - will be updated via reflection when plugin loads
+            mv.visitInsn(Opcodes.ICONST_0);
+            mv.visitFieldInsn(Opcodes.PUTSTATIC, TARGET_CLASS_INTERNAL, LAZY_FIELD, "Z");
         }
     }
 
@@ -100,8 +149,8 @@ public class LazyFluidTransformer extends BaseTransformer {
 
             // if (FluidPlugin.$catalystLazyFluid) return;
             mv.visitFieldInsn(Opcodes.GETSTATIC,
-                "com/hypixel/hytale/builtin/fluid/FluidPlugin",
-                "$catalystLazyFluid",
+                TARGET_CLASS_INTERNAL,
+                LAZY_FIELD,
                 "Z"
             );
 
@@ -111,7 +160,7 @@ public class LazyFluidTransformer extends BaseTransformer {
             mv.visitInsn(Opcodes.RETURN);
 
             mv.visitLabel(continueLabel);
-            mv.visitFrame(Opcodes.F_SAME, 0, null, 0, null);
+            // Frame computed automatically by COMPUTE_FRAMES
         }
     }
 }

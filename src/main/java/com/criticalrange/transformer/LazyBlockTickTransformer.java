@@ -42,30 +42,16 @@ public class LazyBlockTickTransformer extends BaseTransformer {
         return new BlockTickPluginClassVisitor(classWriter);
     }
 
+    private static final String TARGET_CLASS_INTERNAL = "com/hypixel/hytale/builtin/blocktick/BlockTickPlugin";
+    private static final String LAZY_FIELD = "$catalystLazyBlockTick";
+
     private static class BlockTickPluginClassVisitor extends ClassVisitor {
 
         private boolean addedField = false;
+        private boolean hasStaticInit = false;
 
         public BlockTickPluginClassVisitor(ClassWriter classWriter) {
             super(ASM_VERSION, classWriter);
-        }
-
-        @Override
-        public void visitEnd() {
-            if (!addedField) {
-                FieldVisitor fv = cv.visitField(
-                    Opcodes.ACC_PUBLIC | Opcodes.ACC_STATIC,
-                    "$catalystLazyBlockTick",
-                    "Z",
-                    null,
-                    false  // Default: disabled for safety
-                );
-                if (fv != null) {
-                    fv.visitEnd();
-                }
-                addedField = true;
-            }
-            super.visitEnd();
         }
 
         @Override
@@ -73,12 +59,74 @@ public class LazyBlockTickTransformer extends BaseTransformer {
                                          String signature, String[] exceptions) {
             MethodVisitor mv = super.visitMethod(access, name, descriptor, signature, exceptions);
 
+            if (name.equals("<clinit>")) {
+                hasStaticInit = true;
+                return new StaticInitMethodVisitor(mv);
+            }
+
             // Target the version that returns int (block count)
             if (name.equals("discoverTickingBlocks") && descriptor.endsWith(")I")) {
                 return new LazyCheckMethodVisitor(mv);
             }
 
             return mv;
+        }
+
+        @Override
+        public void visitEnd() {
+            if (!addedField) {
+                FieldVisitor fv = cv.visitField(
+                    Opcodes.ACC_PUBLIC | Opcodes.ACC_STATIC,
+                    LAZY_FIELD,
+                    "Z",
+                    null,
+                    null
+                );
+                if (fv != null) {
+                    fv.visitEnd();
+                }
+                addedField = true;
+            }
+
+            // If class has no static initializer, create one with default value (false)
+            if (!hasStaticInit) {
+                MethodVisitor mv = cv.visitMethod(
+                    Opcodes.ACC_STATIC,
+                    "<clinit>",
+                    "()V",
+                    null,
+                    null
+                );
+                mv.visitCode();
+                // Default: false (disabled) - will be updated via reflection when plugin loads
+                mv.visitInsn(Opcodes.ICONST_0);
+                mv.visitFieldInsn(Opcodes.PUTSTATIC, TARGET_CLASS_INTERNAL, LAZY_FIELD, "Z");
+                mv.visitInsn(Opcodes.RETURN);
+                mv.visitMaxs(1, 0);
+                mv.visitEnd();
+            }
+
+            super.visitEnd();
+        }
+    }
+
+    /**
+     * Injects field initialization into existing static initializer.
+     * Uses literal default value (false) - updated via reflection when plugin loads.
+     */
+    private static class StaticInitMethodVisitor extends MethodVisitor {
+
+        public StaticInitMethodVisitor(MethodVisitor mv) {
+            super(ASM_VERSION, mv);
+        }
+
+        @Override
+        public void visitCode() {
+            super.visitCode();
+
+            // Default: false (disabled) - will be updated via reflection when plugin loads
+            mv.visitInsn(Opcodes.ICONST_0);
+            mv.visitFieldInsn(Opcodes.PUTSTATIC, TARGET_CLASS_INTERNAL, LAZY_FIELD, "Z");
         }
     }
 
@@ -100,8 +148,8 @@ public class LazyBlockTickTransformer extends BaseTransformer {
 
             // if (BlockTickPlugin.$catalystLazyBlockTick) return 0;
             mv.visitFieldInsn(Opcodes.GETSTATIC,
-                "com/hypixel/hytale/builtin/blocktick/BlockTickPlugin",
-                "$catalystLazyBlockTick",
+                TARGET_CLASS_INTERNAL,
+                LAZY_FIELD,
                 "Z"
             );
 
@@ -112,7 +160,7 @@ public class LazyBlockTickTransformer extends BaseTransformer {
             mv.visitInsn(Opcodes.IRETURN);
 
             mv.visitLabel(continueLabel);
-            mv.visitFrame(Opcodes.F_APPEND, 0, null, 0, null);
+            // Frame computed automatically by COMPUTE_FRAMES
         }
     }
 }

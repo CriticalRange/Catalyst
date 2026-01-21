@@ -2,6 +2,7 @@ package com.criticalrange.command;
 
 import com.criticalrange.CatalystConfig;
 import com.criticalrange.util.CatalystMetrics;
+import com.criticalrange.util.OptimizationMetrics;
 import com.hypixel.hytale.server.core.Message;
 import com.hypixel.hytale.server.core.command.system.CommandContext;
 import com.hypixel.hytale.server.core.command.system.CommandSender;
@@ -11,6 +12,7 @@ import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.world.World;
 import org.checkerframework.checker.nullness.compatqual.NonNullDecl;
 
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
 /**
@@ -43,6 +45,10 @@ public class CatalystCommand extends AbstractAsyncCommand {
                 case "menu":
                     return openMenuAsync(context);
 
+                case "status":
+                    showStatus(context);
+                    return CompletableFuture.completedFuture(null);
+
                 case "toggle":
                     if (args.length > 2) {
                         handleToggle(context, args[2].toLowerCase());
@@ -57,6 +63,14 @@ public class CatalystCommand extends AbstractAsyncCommand {
 
                 case "help":
                     showHelp(context);
+                    return CompletableFuture.completedFuture(null);
+
+                case "save":
+                    saveConfig(context);
+                    return CompletableFuture.completedFuture(null);
+
+                case "reload":
+                    reloadConfig(context);
                     return CompletableFuture.completedFuture(null);
 
                 default:
@@ -76,9 +90,12 @@ public class CatalystCommand extends AbstractAsyncCommand {
     private void showHelp(CommandContext context) {
         context.sendMessage(Message.raw("=== Catalyst Commands ===").color("yellow"));
         context.sendMessage(Message.raw("/catalyst - Show performance report"));
+        context.sendMessage(Message.raw("/catalyst status - Show optimization status"));
         context.sendMessage(Message.raw("/catalyst config - Show configuration"));
-        context.sendMessage(Message.raw("/catalyst toggle <feature> - Toggle lazy loading"));
+        context.sendMessage(Message.raw("/catalyst toggle <feature> - Toggle optimization"));
         context.sendMessage(Message.raw("/catalyst menu - Open settings GUI"));
+        context.sendMessage(Message.raw("/catalyst save - Save configuration to file"));
+        context.sendMessage(Message.raw("/catalyst reload - Reload configuration from file"));
     }
 
     private void showToggleHelp(CommandContext context) {
@@ -87,6 +104,80 @@ public class CatalystCommand extends AbstractAsyncCommand {
         context.sendMessage(Message.raw("  lazy - Lazy block entity initialization"));
         context.sendMessage(Message.raw("  ticklazy - Lazy block tick discovery"));
         context.sendMessage(Message.raw("  fluidlazy - Lazy fluid pre-processing"));
+        context.sendMessage(Message.raw("  entitydist - Entity view distance optimization"));
+        context.sendMessage(Message.raw("  chunkrate - Chunk loading rate optimization"));
+        context.sendMessage(Message.raw("  pathfinding - NPC pathfinding limits"));
+    }
+
+    private void saveConfig(CommandContext context) {
+        com.criticalrange.Catalyst.getInstance().saveConfig();
+        context.sendMessage(Message.raw("Configuration saved to file.").color("green"));
+    }
+
+    private void reloadConfig(CommandContext context) {
+        boolean success = com.criticalrange.Catalyst.getInstance().reloadConfig();
+        if (success) {
+            context.sendMessage(Message.raw("Configuration reloaded from file.").color("green"));
+        } else {
+            context.sendMessage(Message.raw("Failed to reload configuration (using defaults).").color("yellow"));
+        }
+    }
+
+    private void showStatus(CommandContext context) {
+        context.sendMessage(Message.raw("=== Catalyst Optimization Status ===").color("yellow"));
+        
+        Map<String, OptimizationMetrics.MetricData> metrics = OptimizationMetrics.getAllMetrics();
+        
+        context.sendMessage(Message.raw(""));
+        context.sendMessage(Message.raw("-- Lazy Loading (Chunk Optimizations) --").color("gray"));
+        
+        context.sendMessage(statusLine("Lazy Block Entity", metrics.get("LazyBlockEntity")));
+        context.sendMessage(statusLine("Lazy Block Tick", metrics.get("LazyBlockTick")));
+        context.sendMessage(statusLine("Lazy Fluid", metrics.get("LazyFluid")));
+        
+        context.sendMessage(Message.raw(""));
+        context.sendMessage(Message.raw("-- Runtime Optimizations --").color("gray"));
+        
+        // EntityDistance
+        OptimizationMetrics.MetricData entityDist = metrics.get("EntityDistance");
+        context.sendMessage(statusLine("Entity Distance", entityDist));
+        if (entityDist.transformed && entityDist.enabled) {
+            Object multiplier = entityDist.getValues().get("multiplier");
+            if (multiplier != null) {
+                context.sendMessage(Message.raw("    Multiplier: " + multiplier).color("gray"));
+            }
+        }
+        
+        // ChunkRate
+        OptimizationMetrics.MetricData chunk = metrics.get("ChunkRate");
+        context.sendMessage(statusLine("Chunk Rate", chunk));
+        if (chunk.transformed) {
+            Object cpt = chunk.getValues().get("chunksPerTick");
+            context.sendMessage(Message.raw("    Chunks/Tick: " + cpt).color("gray"));
+        }
+        
+        // Pathfinding
+        OptimizationMetrics.MetricData pathfinding = metrics.get("Pathfinding");
+        context.sendMessage(statusLine("Pathfinding", pathfinding));
+        if (pathfinding.transformed && pathfinding.enabled) {
+            context.sendMessage(Message.raw("    Max Path Length: " + pathfinding.getValues().get("maxPathLength")).color("gray"));
+            context.sendMessage(Message.raw("    Open Nodes Limit: " + pathfinding.getValues().get("openNodesLimit")).color("gray"));
+            context.sendMessage(Message.raw("    Total Nodes Limit: " + pathfinding.getValues().get("totalNodesLimit")).color("gray"));
+        }
+        
+        context.sendMessage(Message.raw(""));
+        context.sendMessage(Message.raw("Use '/catalyst menu' to toggle options.").color("yellow"));
+    }
+    
+    private Message statusLine(String name, OptimizationMetrics.MetricData data) {
+        String status = data.getStatus();
+        String color;
+        switch (status) {
+            case "ACTIVE": color = "green"; break;
+            case "DISABLED": color = "red"; break;
+            default: color = "gray"; break;
+        }
+        return Message.raw("  " + name + ": " + status).color(color);
     }
 
     private void showConfig(CommandContext context) {
@@ -95,6 +186,16 @@ public class CatalystCommand extends AbstractAsyncCommand {
         context.sendMessage(configLine("Lazy Block Entities", CatalystConfig.LAZY_BLOCK_ENTITIES_ENABLED));
         context.sendMessage(configLine("Lazy Block Tick", CatalystConfig.LAZY_BLOCK_TICK_ENABLED));
         context.sendMessage(configLine("Lazy Fluid", CatalystConfig.LAZY_FLUID_ENABLED));
+        context.sendMessage(Message.raw("-- Runtime Optimizations --").color("gray"));
+        context.sendMessage(configLine("Entity Distance", CatalystConfig.ENTITY_DISTANCE_ENABLED));
+        context.sendMessage(Message.raw("    Multiplier: " + CatalystConfig.ENTITY_VIEW_MULTIPLIER).color("gray"));
+        context.sendMessage(configLine("Chunk Rate", CatalystConfig.CHUNK_RATE_ENABLED));
+        context.sendMessage(Message.raw("    Chunks/Tick: " + CatalystConfig.CHUNKS_PER_TICK).color("gray"));
+        context.sendMessage(Message.raw("-- NPC Pathfinding --").color("gray"));
+        context.sendMessage(configLine("Pathfinding Config", CatalystConfig.PATHFINDING_ENABLED));
+        context.sendMessage(Message.raw("    Max Path Length: " + CatalystConfig.MAX_PATH_LENGTH).color("gray"));
+        context.sendMessage(Message.raw("    Open Nodes Limit: " + CatalystConfig.OPEN_NODES_LIMIT).color("gray"));
+        context.sendMessage(Message.raw("    Total Nodes Limit: " + CatalystConfig.TOTAL_NODES_LIMIT).color("gray"));
     }
 
     private Message configLine(String name, boolean enabled) {
@@ -154,6 +255,21 @@ public class CatalystCommand extends AbstractAsyncCommand {
                 name = "Lazy Fluid";
                 break;
 
+            case "entitydist":
+                newState = toggleEntityDistance();
+                name = "Entity Distance";
+                break;
+
+            case "chunkrate":
+                newState = toggleChunkRate();
+                name = "Chunk Rate";
+                break;
+
+            case "pathfinding":
+                newState = togglePathfinding();
+                name = "Pathfinding Config";
+                break;
+
             default:
                 context.sendMessage(Message.raw("Unknown feature: " + feature).color("red"));
                 showToggleHelp(context);
@@ -163,6 +279,9 @@ public class CatalystCommand extends AbstractAsyncCommand {
         String stateStr = newState ? "ENABLED" : "DISABLED";
         String color = newState ? "green" : "red";
         context.sendMessage(Message.raw(name + " is now " + stateStr).color(color));
+
+        // Auto-save config to file
+        com.criticalrange.Catalyst.getInstance().saveConfig();
     }
 
     /**
@@ -216,6 +335,63 @@ public class CatalystCommand extends AbstractAsyncCommand {
         } catch (Exception e) {
             System.err.println("[Catalyst] Failed to toggle lazy fluid: " + e.getMessage());
             return false;
+        }
+    }
+
+    /**
+     * Toggles the entity distance flag in Universe using reflection.
+     */
+    private boolean toggleEntityDistance() {
+        try {
+            Class<?> universeClass = Class.forName("com.hypixel.hytale.server.core.universe.Universe");
+            java.lang.reflect.Field field = universeClass.getField("$catalystEntityDistEnabled");
+            boolean currentState = field.getBoolean(null);
+            boolean newState = !currentState;
+            field.setBoolean(null, newState);
+            CatalystConfig.ENTITY_DISTANCE_ENABLED = newState;
+            return newState;
+        } catch (Exception e) {
+            System.err.println("[Catalyst] Failed to toggle entity distance: " + e.getMessage());
+            CatalystConfig.ENTITY_DISTANCE_ENABLED = !CatalystConfig.ENTITY_DISTANCE_ENABLED;
+            return CatalystConfig.ENTITY_DISTANCE_ENABLED;
+        }
+    }
+
+    /**
+     * Toggles the chunk rate flag in ChunkTracker using reflection.
+     */
+    private boolean toggleChunkRate() {
+        try {
+            Class<?> chunkTrackerClass = Class.forName("com.hypixel.hytale.server.core.modules.entity.player.ChunkTracker");
+            java.lang.reflect.Field field = chunkTrackerClass.getField("$catalystChunkRateEnabled");
+            boolean currentState = field.getBoolean(null);
+            boolean newState = !currentState;
+            field.setBoolean(null, newState);
+            CatalystConfig.CHUNK_RATE_ENABLED = newState;
+            return newState;
+        } catch (Exception e) {
+            System.err.println("[Catalyst] Failed to toggle chunk rate: " + e.getMessage());
+            CatalystConfig.CHUNK_RATE_ENABLED = !CatalystConfig.CHUNK_RATE_ENABLED;
+            return CatalystConfig.CHUNK_RATE_ENABLED;
+        }
+    }
+
+    /**
+     * Toggles the pathfinding config flag in AStarBase using reflection.
+     */
+    private boolean togglePathfinding() {
+        try {
+            Class<?> astarClass = Class.forName("com.hypixel.hytale.server.npc.navigation.AStarBase");
+            java.lang.reflect.Field field = astarClass.getField("$catalystPathfindingEnabled");
+            boolean currentState = field.getBoolean(null);
+            boolean newState = !currentState;
+            field.setBoolean(null, newState);
+            CatalystConfig.PATHFINDING_ENABLED = newState;
+            return newState;
+        } catch (Exception e) {
+            System.err.println("[Catalyst] Failed to toggle pathfinding: " + e.getMessage());
+            CatalystConfig.PATHFINDING_ENABLED = !CatalystConfig.PATHFINDING_ENABLED;
+            return CatalystConfig.PATHFINDING_ENABLED;
         }
     }
 }

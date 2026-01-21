@@ -165,6 +165,39 @@ task deployEarlyPlugin(type: Copy) {
     }
 }
 
+// Task to deploy to both earlyplugins and mods directories
+task deploy {
+    group = 'Hytale'
+    description = 'Deploys the mod to both earlyplugins (transformers) and mods (commands/GUI) directories'
+    dependsOn shadowJar
+
+    doLast {
+        def earlyPluginsDir = file("${hytaleBaseDir}/earlyplugins")
+        def modsDir = file("${hytaleBaseDir}/mods")
+
+        if (!earlyPluginsDir.exists()) {
+            earlyPluginsDir.mkdirs()
+        }
+        if (!modsDir.exists()) {
+            modsDir.mkdirs()
+        }
+
+        copy {
+            from shadowJar.archiveFile
+            into earlyPluginsDir
+        }
+        copy {
+            from shadowJar.archiveFile
+            into modsDir
+        }
+
+        logger.lifecycle("Deployed Catalyst to:")
+        logger.lifecycle("  - ${earlyPluginsDir} (transformers)")
+        logger.lifecycle("  - ${modsDir} (commands/GUI)")
+        logger.lifecycle("Restart the Hytale server to apply changes.")
+    }
+}
+
 test {
     useJUnitPlatform()
 }
@@ -296,16 +329,24 @@ task runServer(type: JavaExec) {
         // Create run directory structure
         runDir.mkdirs()
         file("$runDir/earlyplugins").mkdirs()
+        file("$runDir/mods").mkdirs()
 
-        // Copy JAR to earlyplugins directory
+        // Copy JAR to earlyplugins directory (for transformers)
         copy {
             from shadowJar.archiveFile
             into file("$runDir/earlyplugins")
         }
 
+        // Copy JAR to mods directory (for commands/GUI)
+        copy {
+            from shadowJar.archiveFile
+            into file("$runDir/mods")
+        }
+
         logger.lifecycle("Starting Hytale server...")
         logger.lifecycle("Working directory: ${runDir}")
         logger.lifecycle("Early plugins: ${runDir}/earlyplugins/")
+        logger.lifecycle("Mods: ${runDir}/mods/")
         logger.lifecycle("Server data (universe/, logs/) will be created in ${runDir}")
     }
 
@@ -584,7 +625,7 @@ task vscode {
 }
 
 // Eclipse launch configuration generation
-task eclipse {
+task eclipseConfig {
     group = 'IDE'
     description = 'Generates Eclipse launch configuration for Hytale Server'
 
@@ -631,7 +672,7 @@ task eclipse {
 task ide {
     group = 'IDE'
     description = 'Generates run configurations for all supported IDEs (VSCode, Eclipse, IntelliJ)'
-    dependsOn vscode, eclipse
+    dependsOn vscode, eclipseConfig
 }
 
 // Publishing configuration
