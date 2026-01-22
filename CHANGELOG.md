@@ -2,6 +2,33 @@
 
 All notable changes to Catalyst will be documented in this file.
 
+## [0.2.1] - 2026-01-22
+
+### Removed
+- **Lazy Loading Optimizations**: Completely removed lazy loading features (Lazy Block Entities, Lazy Block Tick, Lazy Fluid Processing) as they only performed throttling without actual optimization benefits
+  - Removed `LAZY_BLOCK_ENTITIES_ENABLED`, `LAZY_BLOCK_TICK_ENABLED`, `LAZY_FLUID_ENABLED` config fields
+  - Removed `BlockModuleMixin`, `BlockTickPluginMixin`, `FluidPluginMixin` mixin classes
+  - Removed lazy loading UI toggles and event handlers
+  - Removed lazy loading from metrics and menu displays
+
+### Changed
+- **Settings UI Improvements**:
+  - Moved Reset to Defaults button outside of tab panels to stay fixed at bottom
+  - Simplified slider options by removing redundant checkboxes - sliders are now standalone
+  - Fixed tab button highlighting - selected tab now properly changes background when switching tabs
+  - Tab buttons now use direct `Background` property for dynamic styling
+- **Menu & Metrics**: Updated to show Runtime Optimizations instead of removed Lazy Loading options
+
+### Added
+- **New Transformers**: Added multiple bytecode transformers for various optimizations:
+  - Animation and Particle toggle transformers
+  - Biome/Tint interpolation transformers
+  - Chunk cache, pool size, and parallel generation transformers
+  - Lighting optimizations (batch, distance, propagation, queue, flat cache, packed ops)
+  - Height search and opacity lookup cache transformers
+- **Visual Effects Toggle**: New utility class for particle and animation control
+- **Config Persistence**: Added `CatalystEarlyInit` for config file loading/saving
+
 ## [0.2.0] - 2026-01-21
 
 ### Added

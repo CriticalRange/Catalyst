@@ -29,15 +29,6 @@ public class CatalystMetrics {
         sb.append(String.format("Memory: %dMB / %dMB (%.1f%%)\n",
             mem.usedMB(), mem.maxMB(), mem.usagePercent()));
 
-        // Lazy loading status
-        sb.append("\n-- Lazy Loading (Chunk Gen) --\n");
-        sb.append(String.format("  Block Entities: %s\n", 
-            com.criticalrange.CatalystConfig.LAZY_BLOCK_ENTITIES_ENABLED ? "ENABLED" : "DISABLED"));
-        sb.append(String.format("  Block Tick: %s\n", 
-            com.criticalrange.CatalystConfig.LAZY_BLOCK_TICK_ENABLED ? "ENABLED" : "DISABLED"));
-        sb.append(String.format("  Fluid: %s\n", 
-            com.criticalrange.CatalystConfig.LAZY_FLUID_ENABLED ? "ENABLED" : "DISABLED"));
-
         // Runtime optimizations status
         sb.append("\n-- Runtime Optimizations --\n");
         sb.append(String.format("  Entity Distance: %s\n", 

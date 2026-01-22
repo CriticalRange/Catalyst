@@ -9,6 +9,7 @@ build/
 .eclipse/
 .vscode/
 *.launch
+.windsurf/
 
 # Runtime
 run/

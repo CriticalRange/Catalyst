@@ -6,13 +6,6 @@ package com.criticalrange;
  * <p>Allows runtime toggling of all optimization features. All fields are volatile
  * to ensure thread-safe reads without explicit synchronization.</p>
  *
- * <h2>Chunk Loading Optimizations (Lazy Loading):</h2>
- * <ul>
- *   <li>{@link #LAZY_BLOCK_ENTITIES_ENABLED} - Defers block entity creation until accessed</li>
- *   <li>{@link #LAZY_BLOCK_TICK_ENABLED} - Defers ticking block discovery</li>
- *   <li>{@link #LAZY_FLUID_ENABLED} - Defers fluid pre-processing simulation</li>
- * </ul>
- *
  * <h2>Runtime Configuration:</h2>
  * <ul>
  *   <li>{@link #ENTITY_DISTANCE_ENABLED} - Configurable entity view distance multiplier</li>
@@ -27,8 +20,6 @@ package com.criticalrange;
  *
  * <p><b>Runtime Changes:</b></p>
  * <ul>
- *   <li><b>Lazy optimizations:</b> Changes take effect immediately for newly loaded chunks.
- *       Already-loaded chunks are not affected.</li>
  *   <li><b>ChunkRate:</b> Changes affect new player connections. Existing players keep their
  *       current value unless manually updated via {@code ChunkTracker.setMaxChunksPerTick()}.</li>
  *   <li><b>EntityDistance:</b> Changes affect new EntityViewer calculations. Existing players
@@ -45,60 +36,6 @@ public class CatalystConfig {
      */
     private CatalystConfig() {
     }
-
-    // ========== Chunk Loading Optimizations (Lazy Loading) ==========
-
-    /**
-     * Enables lazy block entity initialization.
-     *
-     * <p>When enabled, block entities (chests, furnaces, signs, etc.) are NOT created
-     * during chunk pre-load. Instead, they are created on-demand when first accessed.</p>
-     *
-     * <p>This significantly reduces chunk generation time by avoiding the 327,680 block
-     * iteration per chunk. Block entities will still be created when:</p>
-     * <ul>
-     *   <li>A player interacts with the block</li>
-     *   <li>A neighboring block updates</li>
-     *   <li>The block is explicitly queried</li>
-     * </ul>
-     *
-     * <p><b>Note:</b> This is a safe optimization - blocks will still function correctly.
-     * The only difference is when the block entity is initialized.</p>
-     */
-    public static volatile boolean LAZY_BLOCK_ENTITIES_ENABLED = false;  // Disabled by default for safety
-
-    /**
-     * Enables lazy block tick discovery.
-     *
-     * <p>When enabled, ticking blocks (crops, saplings, etc.) are NOT discovered
-     * during chunk pre-load. Instead, they must be discovered later or manually.</p>
-     *
-     * <p>This significantly reduces chunk generation time by avoiding the 32,768 block
-     * iteration per section.</p>
-     *
-     * <p><b>Warning:</b> This may cause crops, saplings, and other ticking blocks to not
-     * grow automatically in newly generated chunks. Use with caution on farming servers.</p>
-     */
-    public static volatile boolean LAZY_BLOCK_TICK_ENABLED = false;  // Disabled by default for safety
-
-    /**
-     * Enables lazy fluid pre-processing.
-     *
-     * <p>When enabled, fluid simulation (water, lava, etc.) is NOT run during chunk pre-load.
-     * Instead, fluids will process normally during regular ticks.</p>
-     *
-     * <p>This MASSIVELY reduces chunk generation time by avoiding:</p>
-     * <ul>
-     *   <li>32,768 block iteration per section</li>
-     *   <li>Up to 100 simulation ticks per chunk</li>
-     *   <li>Complex fluid spread calculations</li>
-     * </ul>
-     *
-     * <p><b>Note:</b> Fluids will still update normally during gameplay. The only difference
-     * is they won't be pre-simulated during chunk generation, meaning water/lava may take
-     * a moment to start flowing after loading.</p>
-     */
-    public static volatile boolean LAZY_FLUID_ENABLED = false;  // Disabled by default for safety
 
     // ========== Runtime Optimizations ==========
 
@@ -209,4 +146,93 @@ public class CatalystConfig {
      * <p>Default: 400 (same as vanilla)</p>
      */
     public static volatile int TOTAL_NODES_LIMIT = 400;
+
+    // ========== Chunk Generation Configuration ==========
+
+    /** Enables configurable chunk generation thread pool size. */
+    public static volatile boolean CHUNK_POOL_SIZE_ENABLED = false;
+    
+    /** Auto-detect optimal pool size based on CPU cores. */
+    public static volatile boolean CHUNK_POOL_SIZE_AUTO = true;
+    
+    /** Manual chunk generation thread pool size. */
+    public static volatile int CHUNK_POOL_SIZE = Runtime.getRuntime().availableProcessors();
+
+    /** Enables configurable chunk cache sizes. */
+    public static volatile boolean CHUNK_CACHE_SIZE_ENABLED = false;
+    
+    /** Auto-detect optimal cache sizes. */
+    public static volatile boolean CHUNK_CACHE_SIZE_AUTO = true;
+    
+    /** Generator cache size. */
+    public static volatile int GENERATOR_CACHE_SIZE = 1024;
+    
+    /** Cave cache size. */
+    public static volatile int CAVE_CACHE_SIZE = 512;
+    
+    /** Prefab cache size. */
+    public static volatile int PREFAB_CACHE_SIZE = 256;
+
+    /** Enables configurable biome interpolation radius. */
+    public static volatile boolean BIOME_INTERPOLATION_ENABLED = false;
+    
+    /** Biome interpolation radius (default 4). */
+    public static volatile int BIOME_INTERPOLATION_RADIUS = 4;
+
+    /** Enables configurable tint interpolation radius. */
+    public static volatile boolean TINT_INTERPOLATION_ENABLED = false;
+    
+    /** Tint interpolation radius (default 4). */
+    public static volatile int TINT_INTERPOLATION_RADIUS = 4;
+
+    /** Enables height search optimization. */
+    public static volatile boolean HEIGHT_SEARCH_ENABLED = false;
+
+    // ========== Lighting Configuration ==========
+
+    /** Enables lighting batch processing. */
+    public static volatile boolean LIGHTING_BATCH_ENABLED = false;
+    
+    /** Number of lighting sections to process per batch. */
+    public static volatile int LIGHTING_BATCH_SIZE = 8;
+
+    /** Enables lighting distance limit. */
+    public static volatile boolean LIGHTING_DISTANCE_ENABLED = false;
+    
+    /** Maximum chunk distance for lighting calculations. */
+    public static volatile int LIGHTING_MAX_DISTANCE = 8;
+
+    /** Enables chunk thread priority configuration. */
+    public static volatile boolean CHUNK_THREAD_PRIORITY_ENABLED = false;
+    
+    /** Chunk generation thread priority (1-10, default 5). */
+    public static volatile int CHUNK_THREAD_PRIORITY = 5;
+
+    // ========== Visual Effects Configuration ==========
+
+    /** Enables particle effects (server-side). */
+    public static volatile boolean PARTICLES_ENABLED = true;
+    
+    /** Enables NPC animations (server-side). */
+    public static volatile boolean ANIMATIONS_ENABLED = true;
+
+    // ========== Advanced Lighting Optimizations ==========
+
+    /** Enables light propagation optimization (packed operations). */
+    public static volatile boolean LIGHT_PROP_OPT_ENABLED = true;
+
+    /** Enables opacity lookup cache for faster block type checks. */
+    public static volatile boolean OPACITY_CACHE_ENABLED = true;
+
+    /** Enables flat cache for light data (trades memory for speed). */
+    public static volatile boolean LIGHT_FLAT_CACHE_ENABLED = true;
+
+    /** Enables light queue processing optimization. */
+    public static volatile boolean LIGHT_QUEUE_OPT_ENABLED = true;
+
+    /** Enables packed light operations (SIMD-style). */
+    public static volatile boolean PACKED_LIGHT_OPS_ENABLED = true;
+
+    /** Enables skipping empty sections during lighting. */
+    public static volatile boolean SKIP_EMPTY_SECTIONS = true;
 }

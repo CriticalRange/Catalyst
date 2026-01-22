@@ -96,10 +96,6 @@ public class Catalyst extends JavaPlugin {
 
     private void logConfig() {
         log("Configuration:");
-        log("  Lazy Loading:");
-        log("    - Block Entities: " + s(CatalystConfig.LAZY_BLOCK_ENTITIES_ENABLED));
-        log("    - Block Tick: " + s(CatalystConfig.LAZY_BLOCK_TICK_ENABLED));
-        log("    - Fluid: " + s(CatalystConfig.LAZY_FLUID_ENABLED));
         log("  Runtime Optimizations:");
         log("    - Entity Distance: " + s(CatalystConfig.ENTITY_DISTANCE_ENABLED) + 
             " (multiplier: " + CatalystConfig.ENTITY_VIEW_MULTIPLIER + ")");
@@ -125,14 +121,6 @@ public class Catalyst extends JavaPlugin {
      * This must be called after loading config but before the server starts using these values.
      */
     private void syncConfigToInjectedFields() {
-        // Lazy loading fields
-        setStaticField("com.hypixel.hytale.server.core.modules.block.BlockModule",
-            "$catalystLazyBlockEntities", CatalystConfig.LAZY_BLOCK_ENTITIES_ENABLED);
-        setStaticField("com.hypixel.hytale.builtin.blocktick.BlockTickPlugin",
-            "$catalystLazyBlockTick", CatalystConfig.LAZY_BLOCK_TICK_ENABLED);
-        setStaticField("com.hypixel.hytale.builtin.fluid.FluidPlugin",
-            "$catalystLazyFluid", CatalystConfig.LAZY_FLUID_ENABLED);
-
         // Entity distance fields
         setStaticField("com.hypixel.hytale.server.core.universe.Universe",
             "$catalystEntityDistEnabled", CatalystConfig.ENTITY_DISTANCE_ENABLED);

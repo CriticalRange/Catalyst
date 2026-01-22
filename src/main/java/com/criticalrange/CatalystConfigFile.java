@@ -15,9 +15,6 @@ import java.nio.file.Path;
  * <p>The file uses a simple JSON structure with all configuration options:</p>
  * <pre>
  * {
- *   "lazyBlockEntities": false,
- *   "lazyBlockTick": false,
- *   "lazyFluid": false,
  *   "entityDistanceEnabled": false,
  *   "entityViewMultiplier": 32,
  *   "chunkRateEnabled": false,
@@ -99,11 +96,6 @@ public class CatalystConfigFile {
      * Applies loaded config data to the static {@link CatalystConfig} fields.
      */
     private void applyToConfig(ConfigData data) {
-        // Lazy loading
-        CatalystConfig.LAZY_BLOCK_ENTITIES_ENABLED = data.lazyBlockEntities;
-        CatalystConfig.LAZY_BLOCK_TICK_ENABLED = data.lazyBlockTick;
-        CatalystConfig.LAZY_FLUID_ENABLED = data.lazyFluid;
-
         // Runtime optimizations
         CatalystConfig.ENTITY_DISTANCE_ENABLED = data.entityDistanceEnabled;
         CatalystConfig.ENTITY_VIEW_MULTIPLIER = clamp(data.entityViewMultiplier, 8, 64);
@@ -122,11 +114,6 @@ public class CatalystConfigFile {
      */
     private ConfigData createFromConfig() {
         ConfigData data = new ConfigData();
-
-        // Lazy loading
-        data.lazyBlockEntities = CatalystConfig.LAZY_BLOCK_ENTITIES_ENABLED;
-        data.lazyBlockTick = CatalystConfig.LAZY_BLOCK_TICK_ENABLED;
-        data.lazyFluid = CatalystConfig.LAZY_FLUID_ENABLED;
 
         // Runtime optimizations
         data.entityDistanceEnabled = CatalystConfig.ENTITY_DISTANCE_ENABLED;
@@ -151,11 +138,6 @@ public class CatalystConfigFile {
      * Internal data class for JSON serialization.
      */
     private static class ConfigData {
-        // Lazy loading (chunk optimizations)
-        boolean lazyBlockEntities = false;
-        boolean lazyBlockTick = false;
-        boolean lazyFluid = false;
-
         // Runtime optimizations
         boolean entityDistanceEnabled = false;
         int entityViewMultiplier = 32;
