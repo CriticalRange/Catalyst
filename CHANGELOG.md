@@ -2,6 +2,22 @@
 
 All notable changes to Catalyst will be documented in this file.
 
+## [0.2.2] - 2026-01-26
+
+### Fixed
+- **Chunk Generation Stability**: Fixed chunk corruption and disappearing chunks caused by multiple transformers modifying the same class
+  - Consolidated `ChunkPoolSizeTransformer`, `ChunkCacheSizeTransformer`, `TintInterpolationTransformer`, and `HeightSearchTransformer` into single `ChunkGeneratorTransformer`
+  - Consolidated `LightPropagationOptTransformer`, `OpacityLookupCacheTransformer`, `LightQueueOptTransformer`, and `LightingDistanceTransformer` into single `FloodLightCalculationTransformer`
+- **Transformer Class Matching**: Fixed transformers not matching target classes due to incorrect class name format (now uses dot notation for matching)
+
+### Changed
+- **Simplified Architecture**: Removed `CommandRegistrationTransformer` and `AssetRegistrationTransformer` - command/asset registration now handled by standard JavaPlugin lifecycle
+- **Fixed Visual Effects Transformers**: `ParticleToggleTransformer` and `AnimationToggleTransformer` now inject static fields directly into target classes instead of referencing external classes
+- **Code Cleanup**: Removed unused reflection-based registration methods from `CatalystEarlyInit`
+
+### Technical
+- Transformers now correctly use dot notation (`com.example.Class`) for `shouldTransform()` matching and slash notation (`com/example/Class`) for bytecode operations
+
 ## [0.2.1] - 2026-01-22
 
 ### Removed

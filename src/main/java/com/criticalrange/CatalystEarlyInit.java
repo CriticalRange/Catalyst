@@ -1,13 +1,12 @@
 package com.criticalrange;
 
-import com.criticalrange.util.VisualEffectsToggle;
 import java.nio.file.Path;
 
 /**
- * Early initialization for Catalyst when running from earlyplugins/ only.
+ * Early initialization for Catalyst configuration and field syncing.
  * 
- * <p>This class handles config loading and field syncing without requiring
- * the JavaPlugin lifecycle.</p>
+ * <p>This class handles config loading and syncing values to injected fields
+ * in transformed Hytale classes.</p>
  */
 public class CatalystEarlyInit {
     
@@ -118,9 +117,11 @@ public class CatalystEarlyInit {
         setStaticField("com.hypixel.hytale.server.worldgen.chunk.ChunkWorkerThreadFactory",
             "$catalystChunkThreadPriority", CatalystConfig.CHUNK_THREAD_PRIORITY);
 
-        // Visual effects - use VisualEffectsToggle directly
-        VisualEffectsToggle.particlesEnabled = CatalystConfig.PARTICLES_ENABLED;
-        VisualEffectsToggle.animationsEnabled = CatalystConfig.ANIMATIONS_ENABLED;
+        // Visual effects - sync to injected fields in Hytale classes
+        setStaticField("com.hypixel.hytale.server.core.universe.world.ParticleUtil",
+            "$catalystParticlesEnabled", CatalystConfig.PARTICLES_ENABLED);
+        setStaticField("com.hypixel.hytale.server.core.entity.AnimationUtils",
+            "$catalystAnimationsEnabled", CatalystConfig.ANIMATIONS_ENABLED);
     }
 
     private static void setStaticField(String className, String fieldName, boolean value) {
@@ -150,4 +151,5 @@ public class CatalystEarlyInit {
             System.err.println("[Catalyst] Failed to set " + fieldName + ": " + e.getMessage());
         }
     }
+    
 }

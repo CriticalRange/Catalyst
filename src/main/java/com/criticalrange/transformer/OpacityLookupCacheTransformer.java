@@ -49,7 +49,7 @@ public class OpacityLookupCacheTransformer extends BaseTransformer {
                 ENABLED_FIELD,
                 "Z",
                 null,
-                Boolean.TRUE
+                Boolean.FALSE
             ).visitEnd();
 
             // Add the cache array field

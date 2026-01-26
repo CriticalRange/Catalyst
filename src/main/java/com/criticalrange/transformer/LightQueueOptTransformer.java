@@ -43,7 +43,7 @@ public class LightQueueOptTransformer extends BaseTransformer {
                 ENABLED_FIELD,
                 "Z",
                 null,
-                Boolean.TRUE
+                Boolean.FALSE
             ).visitEnd();
 
             // Add skip empty sections field
@@ -52,7 +52,7 @@ public class LightQueueOptTransformer extends BaseTransformer {
                 SKIP_EMPTY_FIELD,
                 "Z",
                 null,
-                Boolean.TRUE
+                Boolean.FALSE
             ).visitEnd();
 
             System.out.println("[Catalyst] Added queue optimization fields to FloodLightCalculation");

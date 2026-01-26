@@ -11,14 +11,15 @@ import org.objectweb.asm.Opcodes;
  */
 public class BiomeInterpolationTransformer extends BaseTransformer {
 
-    private static final String TARGET_CLASS = "com/hypixel/hytale/server/worldgen/chunk/HeightThresholdInterpolator";
+    private static final String TARGET_CLASS = "com.hypixel.hytale.server.worldgen.chunk.HeightThresholdInterpolator";
+    private static final String TARGET_CLASS_INTERNAL = "com/hypixel/hytale/server/worldgen/chunk/HeightThresholdInterpolator";
     
     public static final String ENABLED_FIELD = "$catalystBiomeInterpEnabled";
     public static final String RADIUS_FIELD = "$catalystBiomeRadius";
 
     @Override
     protected boolean shouldTransform(String className) {
-        return TARGET_CLASS.equals(className);
+        return className.equals(TARGET_CLASS);
     }
 
     @Override
@@ -79,10 +80,10 @@ public class BiomeInterpolationTransformer extends BaseTransformer {
 
         static void initFields(MethodVisitor mv) {
             mv.visitInsn(Opcodes.ICONST_0);
-            mv.visitFieldInsn(Opcodes.PUTSTATIC, TARGET_CLASS, ENABLED_FIELD, "Z");
+            mv.visitFieldInsn(Opcodes.PUTSTATIC, TARGET_CLASS_INTERNAL, ENABLED_FIELD, "Z");
             
             mv.visitIntInsn(Opcodes.BIPUSH, 4);
-            mv.visitFieldInsn(Opcodes.PUTSTATIC, TARGET_CLASS, RADIUS_FIELD, "I");
+            mv.visitFieldInsn(Opcodes.PUTSTATIC, TARGET_CLASS_INTERNAL, RADIUS_FIELD, "I");
         }
     }
 

@@ -10,7 +10,8 @@ import org.objectweb.asm.Opcodes;
  */
 public class PackedLightOpsTransformer extends BaseTransformer {
 
-    private static final String TARGET_CLASS = "com/hypixel/hytale/server/core/universe/world/chunk/section/ChunkLightData";
+    private static final String TARGET_CLASS = "com.hypixel.hytale.server.core.universe.world.chunk.section.ChunkLightData";
+    private static final String TARGET_CLASS_INTERNAL = "com/hypixel/hytale/server/core/universe/world/chunk/section/ChunkLightData";
     
     public static final String ENABLED_FIELD = "$catalystPackedOpsEnabled";
 
@@ -21,7 +22,7 @@ public class PackedLightOpsTransformer extends BaseTransformer {
 
     @Override
     protected boolean shouldTransform(String className) {
-        return TARGET_CLASS.equals(className);
+        return className.equals(TARGET_CLASS);
     }
 
     @Override
@@ -42,7 +43,7 @@ public class PackedLightOpsTransformer extends BaseTransformer {
                 ENABLED_FIELD,
                 "Z",
                 null,
-                Boolean.TRUE
+                Boolean.FALSE
             ).visitEnd();
 
             System.out.println("[Catalyst] Added packed light operations field to ChunkLightData");

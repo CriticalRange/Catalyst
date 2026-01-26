@@ -165,35 +165,25 @@ task deployEarlyPlugin(type: Copy) {
     }
 }
 
-// Task to deploy to both earlyplugins and mods directories
+// Task to deploy to earlyplugins directory (mods/ no longer needed)
 task deploy {
     group = 'Hytale'
-    description = 'Deploys the mod to both earlyplugins (transformers) and mods (commands/GUI) directories'
+    description = 'Deploys the mod to earlyplugins directory'
     dependsOn shadowJar
 
     doLast {
         def earlyPluginsDir = file("${hytaleBaseDir}/earlyplugins")
-        def modsDir = file("${hytaleBaseDir}/mods")
 
         if (!earlyPluginsDir.exists()) {
             earlyPluginsDir.mkdirs()
-        }
-        if (!modsDir.exists()) {
-            modsDir.mkdirs()
         }
 
         copy {
             from shadowJar.archiveFile
             into earlyPluginsDir
         }
-        copy {
-            from shadowJar.archiveFile
-            into modsDir
-        }
 
-        logger.lifecycle("Deployed Catalyst to:")
-        logger.lifecycle("  - ${earlyPluginsDir} (transformers)")
-        logger.lifecycle("  - ${modsDir} (commands/GUI)")
+        logger.lifecycle("Deployed Catalyst to: ${earlyPluginsDir}")
         logger.lifecycle("Restart the Hytale server to apply changes.")
     }
 }
@@ -331,13 +321,14 @@ task runServer(type: JavaExec) {
         file("$runDir/earlyplugins").mkdirs()
         file("$runDir/mods").mkdirs()
 
-        // Copy JAR to earlyplugins directory (for transformers)
+        // Copy JAR to earlyplugins directory (for bytecode transformers)
         copy {
             from shadowJar.archiveFile
             into file("$runDir/earlyplugins")
         }
 
-        // Copy JAR to mods directory (for commands/GUI)
+        // Copy JAR to mods directory (for runtime classes - commands, GUI, etc.)
+        // This is required due to Hytale's classloader architecture
         copy {
             from shadowJar.archiveFile
             into file("$runDir/mods")

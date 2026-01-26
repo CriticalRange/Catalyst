@@ -11,14 +11,15 @@ import org.objectweb.asm.Opcodes;
  */
 public class ChunkGenParallelTransformer extends BaseTransformer {
 
-    private static final String TARGET_CLASS = "com/hypixel/hytale/server/worldgen/chunk/ChunkWorkerThreadFactory";
+    private static final String TARGET_CLASS = "com.hypixel.hytale.server.worldgen.chunk.ChunkWorkerThreadFactory";
+    private static final String TARGET_CLASS_INTERNAL = "com/hypixel/hytale/server/worldgen/chunk/ChunkWorkerThreadFactory";
     
     public static final String ENABLED_FIELD = "$catalystChunkThreadPriorityEnabled";
     public static final String PRIORITY_FIELD = "$catalystChunkThreadPriority";
 
     @Override
     protected boolean shouldTransform(String className) {
-        return TARGET_CLASS.equals(className);
+        return className.equals(TARGET_CLASS);
     }
 
     @Override
@@ -79,11 +80,11 @@ public class ChunkGenParallelTransformer extends BaseTransformer {
 
         static void initFields(MethodVisitor mv) {
             mv.visitInsn(Opcodes.ICONST_0);
-            mv.visitFieldInsn(Opcodes.PUTSTATIC, TARGET_CLASS, ENABLED_FIELD, "Z");
+            mv.visitFieldInsn(Opcodes.PUTSTATIC, TARGET_CLASS_INTERNAL, ENABLED_FIELD, "Z");
             
             // Default priority: Thread.NORM_PRIORITY (5)
             mv.visitIntInsn(Opcodes.BIPUSH, 5);
-            mv.visitFieldInsn(Opcodes.PUTSTATIC, TARGET_CLASS, PRIORITY_FIELD, "I");
+            mv.visitFieldInsn(Opcodes.PUTSTATIC, TARGET_CLASS_INTERNAL, PRIORITY_FIELD, "I");
         }
     }
 

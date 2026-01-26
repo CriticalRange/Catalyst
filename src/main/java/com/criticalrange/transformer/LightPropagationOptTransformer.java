@@ -49,7 +49,7 @@ public class LightPropagationOptTransformer extends BaseTransformer {
                 ENABLED_FIELD,
                 "Z",
                 null,
-                Boolean.TRUE
+                Boolean.FALSE
             ).visitEnd();
             
             System.out.println("[Catalyst] Added light propagation optimization field to FloodLightCalculation");

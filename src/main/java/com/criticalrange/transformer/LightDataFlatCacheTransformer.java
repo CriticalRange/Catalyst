@@ -13,7 +13,8 @@ import org.objectweb.asm.Opcodes;
  */
 public class LightDataFlatCacheTransformer extends BaseTransformer {
 
-    private static final String TARGET_CLASS = "com/hypixel/hytale/server/core/universe/world/chunk/section/ChunkLightDataBuilder";
+    private static final String TARGET_CLASS = "com.hypixel.hytale.server.core.universe.world.chunk.section.ChunkLightDataBuilder";
+    private static final String TARGET_CLASS_INTERNAL = "com/hypixel/hytale/server/core/universe/world/chunk/section/ChunkLightDataBuilder";
     
     public static final String ENABLED_FIELD = "$catalystFlatCacheEnabled";
 
@@ -24,7 +25,7 @@ public class LightDataFlatCacheTransformer extends BaseTransformer {
 
     @Override
     protected boolean shouldTransform(String className) {
-        return TARGET_CLASS.equals(className);
+        return className.equals(TARGET_CLASS);
     }
 
     @Override
@@ -45,7 +46,7 @@ public class LightDataFlatCacheTransformer extends BaseTransformer {
                 ENABLED_FIELD,
                 "Z",
                 null,
-                Boolean.TRUE
+                Boolean.FALSE
             ).visitEnd();
 
             System.out.println("[Catalyst] Added flat cache field to ChunkLightDataBuilder");

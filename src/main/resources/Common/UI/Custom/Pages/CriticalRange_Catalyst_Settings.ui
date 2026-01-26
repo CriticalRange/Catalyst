@@ -22,6 +22,7 @@ $C.@PageOverlay {
 
         TextButton #TabGeneral {
           Text: "General";
+          TooltipText: "Runtime and chunk generation settings";
           Anchor: (Width: 130, Height: 40);
           Background: #2d3444;
           Style: (
@@ -33,6 +34,7 @@ $C.@PageOverlay {
 
         TextButton #TabLighting {
           Text: "Lighting";
+          TooltipText: "Light propagation and caching optimizations";
           Anchor: (Width: 130, Height: 40);
           Background: #1a1d26;
           Style: (
@@ -44,6 +46,7 @@ $C.@PageOverlay {
 
         TextButton #TabPathfinding {
           Text: "Pathfinding";
+          TooltipText: "NPC pathfinding algorithm limits";
           Anchor: (Width: 130, Height: 40);
           Background: #1a1d26;
           Style: (
@@ -55,6 +58,7 @@ $C.@PageOverlay {
 
         TextButton #TabVisual {
           Text: "Visual";
+          TooltipText: "Particle and animation toggles";
           Anchor: (Width: 130, Height: 40);
           Background: #1a1d26;
           Style: (
@@ -66,6 +70,7 @@ $C.@PageOverlay {
 
         TextButton #TabAdvanced {
           Text: "Advanced";
+          TooltipText: "Debug information and version details";
           Anchor: (Width: 130, Height: 40);
           Background: #1a1d26;
           Style: (
@@ -103,12 +108,12 @@ $C.@PageOverlay {
         // Runtime Section
         Label { Style: (FontSize: 14, TextColor: #55aaff, RenderBold: true, RenderUppercase: true); Text: "Runtime Optimizations"; Padding: (Bottom: 8); }
 
-        Group { Anchor: (Height: 44, Bottom: 4); Background: #1a1d26; LayoutMode: Left; Padding: (Left: 16, Right: 16);
+        Group { Anchor: (Height: 44, Bottom: 4); Background: #1a1d26; LayoutMode: Left; Padding: (Left: 16, Right: 16); TooltipText: "Controls entity visibility range. Higher values show more entities but increase CPU load (8-64)";
           Label { Style: (VerticalAlignment: Center, TextColor: #96a9be, FontSize: 15); Text: "Entity View Multiplier"; Anchor: (Width: 200); }
           SliderNumberField #EntityDistanceSlider { Anchor: (Width: 250, Height: 5); SliderStyle: $C.@DefaultSliderStyle; NumberFieldStyle: $C.@DefaultInputFieldStyle; Min: 8; Max: 64; }
         }
 
-        Group { Anchor: (Height: 44, Bottom: 4); Background: #1a1d26; LayoutMode: Left; Padding: (Left: 16, Right: 16);
+        Group { Anchor: (Height: 44, Bottom: 4); Background: #1a1d26; LayoutMode: Left; Padding: (Left: 16, Right: 16); TooltipText: "Number of chunks processed per server tick. Higher = faster loading but more CPU usage (1-16)";
           Label { Style: (VerticalAlignment: Center, TextColor: #96a9be, FontSize: 15); Text: "Chunks Per Tick"; Anchor: (Width: 200); }
           SliderNumberField #ChunkRateSlider { Anchor: (Width: 250, Height: 5); SliderStyle: $C.@DefaultSliderStyle; NumberFieldStyle: $C.@DefaultInputFieldStyle; Min: 1; Max: 16; }
         }
@@ -116,7 +121,7 @@ $C.@PageOverlay {
         // Chunk Generation Section
         Label { Style: (FontSize: 14, TextColor: #55aaff, RenderBold: true, RenderUppercase: true); Text: "Chunk Generation"; Padding: (Top: 16, Bottom: 8); }
 
-        Group { Anchor: (Height: 44, Bottom: 4); Background: #1a1d26; LayoutMode: Left; Padding: (Left: 16, Right: 16);
+        Group { Anchor: (Height: 44, Bottom: 4); Background: #1a1d26; LayoutMode: Left; Padding: (Left: 16, Right: 16); TooltipText: "Thread priority for chunk generation. Higher = faster generation but may affect other processes (1-10)";
           Label { Style: (VerticalAlignment: Center, TextColor: #96a9be, FontSize: 15); Text: "Thread Priority (1-10)"; Anchor: (Width: 200); }
           SliderNumberField #ChunkThreadPrioritySlider { Anchor: (Width: 250, Height: 5); SliderStyle: $C.@DefaultSliderStyle; NumberFieldStyle: $C.@DefaultInputFieldStyle; Min: 1; Max: 10; }
         }
@@ -131,12 +136,12 @@ $C.@PageOverlay {
 
         Label { Style: (FontSize: 14, TextColor: #55aaff, RenderBold: true, RenderUppercase: true); Text: "Basic Lighting"; Padding: (Bottom: 8); }
 
-        Group { Anchor: (Height: 44, Bottom: 4); Background: #1a1d26; LayoutMode: Left; Padding: (Left: 16, Right: 16);
+        Group { Anchor: (Height: 44, Bottom: 4); Background: #1a1d26; LayoutMode: Left; Padding: (Left: 16, Right: 16); TooltipText: "Number of light updates processed per batch. Higher = faster lighting but more CPU spikes (1-32)";
           Label { Style: (VerticalAlignment: Center, TextColor: #96a9be, FontSize: 15); Text: "Batch Size"; Anchor: (Width: 200); }
           SliderNumberField #LightingBatchSlider { Anchor: (Width: 250, Height: 5); SliderStyle: $C.@DefaultSliderStyle; NumberFieldStyle: $C.@DefaultInputFieldStyle; Min: 1; Max: 32; }
         }
 
-        Group { Anchor: (Height: 44, Bottom: 4); Background: #1a1d26; LayoutMode: Left; Padding: (Left: 16, Right: 16);
+        Group { Anchor: (Height: 44, Bottom: 4); Background: #1a1d26; LayoutMode: Left; Padding: (Left: 16, Right: 16); TooltipText: "Maximum distance for light propagation calculations in chunks (2-16)";
           Label { Style: (VerticalAlignment: Center, TextColor: #96a9be, FontSize: 15); Text: "Max Distance"; Anchor: (Width: 200); }
           SliderNumberField #LightingDistanceSlider { Anchor: (Width: 250, Height: 5); SliderStyle: $C.@DefaultSliderStyle; NumberFieldStyle: $C.@DefaultInputFieldStyle; Min: 2; Max: 16; }
         }
@@ -144,32 +149,32 @@ $C.@PageOverlay {
         // Advanced Lighting
         Label { Style: (FontSize: 14, TextColor: #55aaff, RenderBold: true, RenderUppercase: true); Text: "Advanced Lighting"; Padding: (Top: 16, Bottom: 8); }
 
-        Group #LightPropOptToggle { Anchor: (Height: 44, Bottom: 4); Background: #1a1d26; LayoutMode: Left; Padding: (Left: 16, Right: 16);
+        Group #LightPropOptToggle { Anchor: (Height: 44, Bottom: 4); Background: #1a1d26; LayoutMode: Left; Padding: (Left: 16, Right: 16); TooltipText: "Optimizes light spread calculations using directional propagation";
           Label { Style: (VerticalAlignment: Center, TextColor: #96a9be, FontSize: 15); Text: "Light Propagation Opt"; FlexWeight: 1; }
           CheckBox #CheckBox { Anchor: (Width: 24, Height: 24); Style: $C.@DefaultCheckBoxStyle; }
         }
 
-        Group #OpacityCacheToggle { Anchor: (Height: 44, Bottom: 4); Background: #1a1d26; LayoutMode: Left; Padding: (Left: 16, Right: 16);
+        Group #OpacityCacheToggle { Anchor: (Height: 44, Bottom: 4); Background: #1a1d26; LayoutMode: Left; Padding: (Left: 16, Right: 16); TooltipText: "Caches block opacity values to reduce repeated lookups";
           Label { Style: (VerticalAlignment: Center, TextColor: #96a9be, FontSize: 15); Text: "Opacity Lookup Cache"; FlexWeight: 1; }
           CheckBox #CheckBox { Anchor: (Width: 24, Height: 24); Style: $C.@DefaultCheckBoxStyle; }
         }
 
-        Group #FlatCacheToggle { Anchor: (Height: 44, Bottom: 4); Background: #1a1d26; LayoutMode: Left; Padding: (Left: 16, Right: 16);
+        Group #FlatCacheToggle { Anchor: (Height: 44, Bottom: 4); Background: #1a1d26; LayoutMode: Left; Padding: (Left: 16, Right: 16); TooltipText: "Uses flat array cache for light data instead of nested structures";
           Label { Style: (VerticalAlignment: Center, TextColor: #96a9be, FontSize: 15); Text: "Flat Light Data Cache"; FlexWeight: 1; }
           CheckBox #CheckBox { Anchor: (Width: 24, Height: 24); Style: $C.@DefaultCheckBoxStyle; }
         }
 
-        Group #QueueOptToggle { Anchor: (Height: 44, Bottom: 4); Background: #1a1d26; LayoutMode: Left; Padding: (Left: 16, Right: 16);
+        Group #QueueOptToggle { Anchor: (Height: 44, Bottom: 4); Background: #1a1d26; LayoutMode: Left; Padding: (Left: 16, Right: 16); TooltipText: "Optimizes light update queue processing order";
           Label { Style: (VerticalAlignment: Center, TextColor: #96a9be, FontSize: 15); Text: "Queue Processing Opt"; FlexWeight: 1; }
           CheckBox #CheckBox { Anchor: (Width: 24, Height: 24); Style: $C.@DefaultCheckBoxStyle; }
         }
 
-        Group #PackedOpsToggle { Anchor: (Height: 44, Bottom: 4); Background: #1a1d26; LayoutMode: Left; Padding: (Left: 16, Right: 16);
+        Group #PackedOpsToggle { Anchor: (Height: 44, Bottom: 4); Background: #1a1d26; LayoutMode: Left; Padding: (Left: 16, Right: 16); TooltipText: "Uses packed integer operations for light level calculations";
           Label { Style: (VerticalAlignment: Center, TextColor: #96a9be, FontSize: 15); Text: "Packed Light Operations"; FlexWeight: 1; }
           CheckBox #CheckBox { Anchor: (Width: 24, Height: 24); Style: $C.@DefaultCheckBoxStyle; }
         }
 
-        Group #SkipEmptyToggle { Anchor: (Height: 44, Bottom: 4); Background: #1a1d26; LayoutMode: Left; Padding: (Left: 16, Right: 16);
+        Group #SkipEmptyToggle { Anchor: (Height: 44, Bottom: 4); Background: #1a1d26; LayoutMode: Left; Padding: (Left: 16, Right: 16); TooltipText: "Skips lighting calculations for empty chunk sections";
           Label { Style: (VerticalAlignment: Center, TextColor: #96a9be, FontSize: 15); Text: "Skip Empty Sections"; FlexWeight: 1; }
           CheckBox #CheckBox { Anchor: (Width: 24, Height: 24); Style: $C.@DefaultCheckBoxStyle; }
         }
@@ -184,17 +189,17 @@ $C.@PageOverlay {
 
         Label { Style: (FontSize: 14, TextColor: #55aaff, RenderBold: true, RenderUppercase: true); Text: "NPC Pathfinding"; Padding: (Bottom: 8); }
 
-        Group { Anchor: (Height: 44, Bottom: 4); Background: #1a1d26; LayoutMode: Left; Padding: (Left: 16, Right: 16);
+        Group { Anchor: (Height: 44, Bottom: 4); Background: #1a1d26; LayoutMode: Left; Padding: (Left: 16, Right: 16); TooltipText: "Maximum nodes in a path. Lower = faster but shorter paths (50-500)";
           Label { Style: (VerticalAlignment: Center, TextColor: #96a9be, FontSize: 15); Text: "Max Path Length"; Anchor: (Width: 200); }
           SliderNumberField #MaxPathLengthSlider { Anchor: (Width: 250, Height: 5); SliderStyle: $C.@DefaultSliderStyle; NumberFieldStyle: $C.@DefaultInputFieldStyle; Min: 50; Max: 500; }
         }
 
-        Group { Anchor: (Height: 44, Bottom: 4); Background: #1a1d26; LayoutMode: Left; Padding: (Left: 16, Right: 16);
+        Group { Anchor: (Height: 44, Bottom: 4); Background: #1a1d26; LayoutMode: Left; Padding: (Left: 16, Right: 16); TooltipText: "Max nodes to explore simultaneously. Lower = less memory usage (20-200)";
           Label { Style: (VerticalAlignment: Center, TextColor: #96a9be, FontSize: 15); Text: "Open Nodes Limit"; Anchor: (Width: 200); }
           SliderNumberField #OpenNodesSlider { Anchor: (Width: 250, Height: 5); SliderStyle: $C.@DefaultSliderStyle; NumberFieldStyle: $C.@DefaultInputFieldStyle; Min: 20; Max: 200; }
         }
 
-        Group { Anchor: (Height: 44, Bottom: 4); Background: #1a1d26; LayoutMode: Left; Padding: (Left: 16, Right: 16);
+        Group { Anchor: (Height: 44, Bottom: 4); Background: #1a1d26; LayoutMode: Left; Padding: (Left: 16, Right: 16); TooltipText: "Total nodes allowed in pathfinding. Lower = faster but may fail on complex paths (100-1000)";
           Label { Style: (VerticalAlignment: Center, TextColor: #96a9be, FontSize: 15); Text: "Total Nodes Limit"; Anchor: (Width: 200); }
           SliderNumberField #TotalNodesSlider { Anchor: (Width: 250, Height: 5); SliderStyle: $C.@DefaultSliderStyle; NumberFieldStyle: $C.@DefaultInputFieldStyle; Min: 100; Max: 1000; }
         }
@@ -209,12 +214,12 @@ $C.@PageOverlay {
 
         Label { Style: (FontSize: 14, TextColor: #55aaff, RenderBold: true, RenderUppercase: true); Text: "Visual Effects"; Padding: (Bottom: 8); }
 
-        Group #ParticlesToggle { Anchor: (Height: 44, Bottom: 4); Background: #1a1d26; LayoutMode: Left; Padding: (Left: 16, Right: 16);
+        Group #ParticlesToggle { Anchor: (Height: 44, Bottom: 4); Background: #1a1d26; LayoutMode: Left; Padding: (Left: 16, Right: 16); TooltipText: "Enable or disable particle effects for better performance";
           Label { Style: (VerticalAlignment: Center, TextColor: #96a9be, FontSize: 15); Text: "Particle Effects"; FlexWeight: 1; }
           CheckBox #CheckBox { Anchor: (Width: 24, Height: 24); Style: $C.@DefaultCheckBoxStyle; }
         }
 
-        Group #AnimationsToggle { Anchor: (Height: 44, Bottom: 4); Background: #1a1d26; LayoutMode: Left; Padding: (Left: 16, Right: 16);
+        Group #AnimationsToggle { Anchor: (Height: 44, Bottom: 4); Background: #1a1d26; LayoutMode: Left; Padding: (Left: 16, Right: 16); TooltipText: "Enable or disable NPC animations for better performance";
           Label { Style: (VerticalAlignment: Center, TextColor: #96a9be, FontSize: 15); Text: "NPC Animations"; FlexWeight: 1; }
           CheckBox #CheckBox { Anchor: (Width: 24, Height: 24); Style: $C.@DefaultCheckBoxStyle; }
         }
@@ -229,12 +234,12 @@ $C.@PageOverlay {
 
         Label { Style: (FontSize: 14, TextColor: #55aaff, RenderBold: true, RenderUppercase: true); Text: "Debug Info"; Padding: (Bottom: 8); }
 
-        Group { Anchor: (Height: 60, Bottom: 8); Background: #1a1d26; LayoutMode: Top; Padding: (Full: 16);
+        Group { Anchor: (Height: 60, Bottom: 8); Background: #1a1d26; LayoutMode: Top; Padding: (Full: 16); TooltipText: "Current version of the Catalyst optimization mod";
           Label { Style: (TextColor: #96a9be, FontSize: 14, RenderBold: true); Text: "Catalyst Version"; }
           Label #VersionLabel { Style: (TextColor: #6e7da1, FontSize: 13); Text: "1.0.0"; }
         }
 
-        Group { Anchor: (Height: 60, Bottom: 8); Background: #1a1d26; LayoutMode: Top; Padding: (Full: 16);
+        Group { Anchor: (Height: 60, Bottom: 8); Background: #1a1d26; LayoutMode: Top; Padding: (Full: 16); TooltipText: "Number of bytecode transformers currently active";
           Label { Style: (TextColor: #96a9be, FontSize: 14, RenderBold: true); Text: "Active Transformers"; }
           Label #TransformersLabel { Style: (TextColor: #6e7da1, FontSize: 13); Text: "20 loaded"; }
         }
@@ -250,6 +255,7 @@ $C.@PageOverlay {
         $C.@SecondaryTextButton #ResetButton {
           @Text = "Reset to Defaults";
           @Anchor = (MinWidth: 180);
+          TooltipText: "Reset all settings to their default values";
         }
       }
     }
