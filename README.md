@@ -26,7 +26,7 @@ Everything's toggleable at runtime via `/catalyst menu`—no restart needed.
 
 **For most users:**
 
-1. Download the latest JAR from: [RELEASES PAGE - ADD URL HERE]
+1. Download the latest JAR from: [[RELEASES PAGE](https://www.curseforge.com/hytale/bootstrap/catalyst/files/all?page=1&pageSize=20&showAlphaFiles=hide)]
 2. Drop it in your `early-plugins/` folder (The plugin goes in `early-plugins/`, not `mods/`. It runs before the server starts, so transformers can intercept class loading.):
    - **Windows**: `C:\Program Files\Hytale\install\early-plugins\`
    - **Linux (Flatpak)**: `~/.var/app/com.hypixel.HytaleLauncher/data/Hytale/install/early-plugins/`
@@ -58,7 +58,7 @@ If you're on Flatpak, the paths are a bit buried:
 
 ## Development
 
-The transformer pattern is straightforward—extend `BaseTransformer`, implement `transform()`, and register via `META-INF/services`. If something goes wrong, return the original bytecode and the server continues normally.
+The transformer pattern is straightforward: extend `BaseTransformer`, implement `transform()`, and register via `META-INF/services`. If something goes wrong, return the original bytecode and the server continues normally.
 
 All config fields are `volatile` and readable at runtime, so you can flip optimizations on/off without restarting.
 
@@ -67,12 +67,6 @@ All config fields are `volatile` and readable at runtime, so you can flip optimi
 ./gradlew deployEarlyPlugin  # Deploy to early-plugins/
 ./gradlew runServer          # Launch server with mod loaded
 ```
-
-## Documentation
-
-- [Performance Optimizations](docs/PERFORMANCE_OPTIMIZATIONS.md) — Roadmap and planned work
-- [API Reference](docs/HYTALE_API_REFERENCE.md) — Hytale Server Plugin API docs
-- [Early Plugins Guide](docs/ADVANCED_EARLY_PLUGINS.md) — How bytecode transformation works
 
 ## Hyxin Compatibility
 
