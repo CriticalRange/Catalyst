@@ -142,6 +142,44 @@ public class Catalyst extends JavaPlugin {
             "$catalystOpenNodesLimit", CatalystConfig.OPEN_NODES_LIMIT);
         setStaticField("com.hypixel.hytale.server.npc.navigation.AStarBase",
             "$catalystTotalNodesLimit", CatalystConfig.TOTAL_NODES_LIMIT);
+
+        // Chunk generation fields
+        setStaticField("com.hypixel.hytale.server.worldgen.chunk.ChunkGenerator",
+            "$catalystPoolSizeEnabled", CatalystConfig.CHUNK_POOL_SIZE_ENABLED);
+        setStaticField("com.hypixel.hytale.server.worldgen.chunk.ChunkGenerator",
+            "$catalystPoolSize", CatalystConfig.CHUNK_POOL_SIZE);
+        setStaticField("com.hypixel.hytale.server.worldgen.chunk.ChunkGenerator",
+            "$catalystCacheSizeEnabled", CatalystConfig.CHUNK_CACHE_SIZE_ENABLED);
+        setStaticField("com.hypixel.hytale.server.worldgen.chunk.ChunkGenerator",
+            "$catalystGeneratorCacheSize", CatalystConfig.GENERATOR_CACHE_SIZE);
+        setStaticField("com.hypixel.hytale.server.worldgen.chunk.ChunkGenerator",
+            "$catalystCaveCacheSize", CatalystConfig.CAVE_CACHE_SIZE);
+        setStaticField("com.hypixel.hytale.server.worldgen.chunk.ChunkGenerator",
+            "$catalystPrefabCacheSize", CatalystConfig.PREFAB_CACHE_SIZE);
+        setStaticField("com.hypixel.hytale.server.worldgen.chunk.ChunkGenerator",
+            "$catalystThreadPriorityEnabled", CatalystConfig.CHUNK_THREAD_PRIORITY_ENABLED);
+        setStaticField("com.hypixel.hytale.server.worldgen.chunk.ChunkGenerator",
+            "$catalystThreadPriority", CatalystConfig.CHUNK_THREAD_PRIORITY);
+
+        // Lighting optimization fields
+        setStaticField("com.hypixel.hytale.server.core.universe.world.lighting.FloodLightCalculation",
+            "$catalystSkipEmptyEnabled", CatalystConfig.LIGHT_SKIP_EMPTY_ENABLED);
+
+        // Visual effects fields
+        setStaticField("com.hypixel.hytale.server.core.universe.world.ParticleUtil",
+            "$catalystParticlesEnabled", CatalystConfig.PARTICLES_ENABLED);
+        setStaticField("com.hypixel.hytale.server.core.entity.AnimationUtils",
+            "$catalystAnimationsEnabled", CatalystConfig.ANIMATIONS_ENABLED);
+
+        // Caching optimization fields
+        setStaticField("com.hypixel.hytale.server.core.universe.world.chunk.BlockChunk",
+            "$catalystSectionCacheEnabled", CatalystConfig.BLOCK_SECTION_CACHE_ENABLED);
+        setStaticField("com.hypixel.hytale.assetstore.map.BlockTypeAssetMap",
+            "$catalystBlockTypeCacheEnabled", CatalystConfig.BLOCK_TYPE_CACHE_ENABLED);
+        setStaticField("com.hypixel.hytale.assetstore.map.BlockTypeAssetMap",
+            "$catalystBlockTypeCacheSize", CatalystConfig.BLOCK_TYPE_CACHE_SIZE);
+        setStaticField("com.hypixel.hytale.server.core.universe.world.accessor.LocalCachedChunkAccessor",
+            "$catalystLocalChunkCacheEnabled", CatalystConfig.LOCAL_CHUNK_CACHE_ENABLED);
     }
 
     private void setStaticField(String className, String fieldName, boolean value) {

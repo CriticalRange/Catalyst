@@ -10,6 +10,9 @@ All notable changes to Catalyst will be documented in this file.
   - Consolidated `LightPropagationOptTransformer`, `OpacityLookupCacheTransformer`, `LightQueueOptTransformer`, and `LightingDistanceTransformer` into single `FloodLightCalculationTransformer`
 - **Transformer Class Matching**: Fixed transformers not matching target classes due to incorrect class name format (now uses dot notation for matching)
 
+### Added
+- **UI Tooltips**: Added descriptive tooltips to all settings UI elements explaining what each optimization does
+
 ### Changed
 - **Simplified Architecture**: Removed `CommandRegistrationTransformer` and `AssetRegistrationTransformer` - command/asset registration now handled by standard JavaPlugin lifecycle
 - **Fixed Visual Effects Transformers**: `ParticleToggleTransformer` and `AnimationToggleTransformer` now inject static fields directly into target classes instead of referencing external classes

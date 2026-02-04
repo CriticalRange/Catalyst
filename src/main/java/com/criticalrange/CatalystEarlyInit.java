@@ -71,17 +71,13 @@ public class CatalystEarlyInit {
         setStaticField("com.hypixel.hytale.server.npc.navigation.AStarBase",
             "$catalystTotalNodesLimit", CatalystConfig.TOTAL_NODES_LIMIT);
 
-        // Chunk generation fields
+        // Chunk generation fields (ChunkGeneratorTransformer)
         setStaticField("com.hypixel.hytale.server.worldgen.chunk.ChunkGenerator",
             "$catalystPoolSizeEnabled", CatalystConfig.CHUNK_POOL_SIZE_ENABLED);
-        setStaticField("com.hypixel.hytale.server.worldgen.chunk.ChunkGenerator",
-            "$catalystPoolSizeAuto", CatalystConfig.CHUNK_POOL_SIZE_AUTO);
         setStaticField("com.hypixel.hytale.server.worldgen.chunk.ChunkGenerator",
             "$catalystPoolSize", CatalystConfig.CHUNK_POOL_SIZE);
         setStaticField("com.hypixel.hytale.server.worldgen.chunk.ChunkGenerator",
             "$catalystCacheSizeEnabled", CatalystConfig.CHUNK_CACHE_SIZE_ENABLED);
-        setStaticField("com.hypixel.hytale.server.worldgen.chunk.ChunkGenerator",
-            "$catalystCacheSizeAuto", CatalystConfig.CHUNK_CACHE_SIZE_AUTO);
         setStaticField("com.hypixel.hytale.server.worldgen.chunk.ChunkGenerator",
             "$catalystGeneratorCacheSize", CatalystConfig.GENERATOR_CACHE_SIZE);
         setStaticField("com.hypixel.hytale.server.worldgen.chunk.ChunkGenerator",
@@ -89,39 +85,35 @@ public class CatalystEarlyInit {
         setStaticField("com.hypixel.hytale.server.worldgen.chunk.ChunkGenerator",
             "$catalystPrefabCacheSize", CatalystConfig.PREFAB_CACHE_SIZE);
         setStaticField("com.hypixel.hytale.server.worldgen.chunk.ChunkGenerator",
-            "$catalystTintInterpEnabled", CatalystConfig.TINT_INTERPOLATION_ENABLED);
+            "$catalystThreadPriorityEnabled", CatalystConfig.CHUNK_THREAD_PRIORITY_ENABLED);
         setStaticField("com.hypixel.hytale.server.worldgen.chunk.ChunkGenerator",
-            "$catalystTintRadius", CatalystConfig.TINT_INTERPOLATION_RADIUS);
-        setStaticField("com.hypixel.hytale.server.worldgen.chunk.ChunkGenerator",
-            "$catalystHeightSearchEnabled", CatalystConfig.HEIGHT_SEARCH_ENABLED);
+            "$catalystThreadPriority", CatalystConfig.CHUNK_THREAD_PRIORITY);
 
-        // Biome interpolation fields
-        setStaticField("com.hypixel.hytale.server.worldgen.chunk.HeightThresholdInterpolator",
-            "$catalystBiomeInterpEnabled", CatalystConfig.BIOME_INTERPOLATION_ENABLED);
-        setStaticField("com.hypixel.hytale.server.worldgen.chunk.HeightThresholdInterpolator",
-            "$catalystBiomeRadius", CatalystConfig.BIOME_INTERPOLATION_RADIUS);
-
-        // Lighting optimization fields
-        setStaticField("com.hypixel.hytale.server.core.universe.world.lighting.ChunkLightingManager",
-            "$catalystLightingBatchEnabled", CatalystConfig.LIGHTING_BATCH_ENABLED);
-        setStaticField("com.hypixel.hytale.server.core.universe.world.lighting.ChunkLightingManager",
-            "$catalystLightingBatchSize", CatalystConfig.LIGHTING_BATCH_SIZE);
+        // Lighting optimization fields (FloodLightCalculationTransformer)
+        // Skip empty sections - skips processing sections that are solid air with no light
         setStaticField("com.hypixel.hytale.server.core.universe.world.lighting.FloodLightCalculation",
-            "$catalystLightingDistanceEnabled", CatalystConfig.LIGHTING_DISTANCE_ENABLED);
-        setStaticField("com.hypixel.hytale.server.core.universe.world.lighting.FloodLightCalculation",
-            "$catalystLightingMaxDistance", CatalystConfig.LIGHTING_MAX_DISTANCE);
-
-        // Chunk thread priority fields
-        setStaticField("com.hypixel.hytale.server.worldgen.chunk.ChunkWorkerThreadFactory",
-            "$catalystChunkThreadPriorityEnabled", CatalystConfig.CHUNK_THREAD_PRIORITY_ENABLED);
-        setStaticField("com.hypixel.hytale.server.worldgen.chunk.ChunkWorkerThreadFactory",
-            "$catalystChunkThreadPriority", CatalystConfig.CHUNK_THREAD_PRIORITY);
+            "$catalystSkipEmptyEnabled", CatalystConfig.LIGHT_SKIP_EMPTY_ENABLED);
 
         // Visual effects - sync to injected fields in Hytale classes
         setStaticField("com.hypixel.hytale.server.core.universe.world.ParticleUtil",
             "$catalystParticlesEnabled", CatalystConfig.PARTICLES_ENABLED);
         setStaticField("com.hypixel.hytale.server.core.entity.AnimationUtils",
             "$catalystAnimationsEnabled", CatalystConfig.ANIMATIONS_ENABLED);
+
+        // Caching optimizations
+        // BlockChunk section cache - caches last accessed section for Y-iteration patterns
+        setStaticField("com.hypixel.hytale.server.core.universe.world.chunk.BlockChunk",
+            "$catalystSectionCacheEnabled", CatalystConfig.BLOCK_SECTION_CACHE_ENABLED);
+
+        // BlockType lookup cache - caches BlockType by block ID
+        setStaticField("com.hypixel.hytale.assetstore.map.BlockTypeAssetMap",
+            "$catalystBlockTypeCacheEnabled", CatalystConfig.BLOCK_TYPE_CACHE_ENABLED);
+        setStaticField("com.hypixel.hytale.assetstore.map.BlockTypeAssetMap",
+            "$catalystBlockTypeCacheSize", CatalystConfig.BLOCK_TYPE_CACHE_SIZE);
+
+        // LocalCachedChunkAccessor - caches last 2 accessed chunks during lighting
+        setStaticField("com.hypixel.hytale.server.core.universe.world.accessor.LocalCachedChunkAccessor",
+            "$catalystLocalChunkCacheEnabled", CatalystConfig.LOCAL_CHUNK_CACHE_ENABLED);
     }
 
     private static void setStaticField(String className, String fieldName, boolean value) {

@@ -41,17 +41,8 @@ public class CatalystSettingsGui extends InteractiveCustomUIPage<CatalystSetting
         uiCommandBuilder.set("#OpenNodesSlider.Value", com.criticalrange.CatalystConfig.OPEN_NODES_LIMIT);
         uiCommandBuilder.set("#TotalNodesSlider.Value", com.criticalrange.CatalystConfig.TOTAL_NODES_LIMIT);
 
-        // Set slider values for lighting
-        uiCommandBuilder.set("#LightingBatchSlider.Value", com.criticalrange.CatalystConfig.LIGHTING_BATCH_SIZE);
-        uiCommandBuilder.set("#LightingDistanceSlider.Value", com.criticalrange.CatalystConfig.LIGHTING_MAX_DISTANCE);
-
-        // Set checkbox values for advanced lighting optimizations
-        uiCommandBuilder.set("#LightPropOptToggle #CheckBox.Value", com.criticalrange.CatalystConfig.LIGHT_PROP_OPT_ENABLED);
-        uiCommandBuilder.set("#OpacityCacheToggle #CheckBox.Value", com.criticalrange.CatalystConfig.OPACITY_CACHE_ENABLED);
-        uiCommandBuilder.set("#FlatCacheToggle #CheckBox.Value", com.criticalrange.CatalystConfig.LIGHT_FLAT_CACHE_ENABLED);
-        uiCommandBuilder.set("#QueueOptToggle #CheckBox.Value", com.criticalrange.CatalystConfig.LIGHT_QUEUE_OPT_ENABLED);
-        uiCommandBuilder.set("#PackedOpsToggle #CheckBox.Value", com.criticalrange.CatalystConfig.PACKED_LIGHT_OPS_ENABLED);
-        uiCommandBuilder.set("#SkipEmptyToggle #CheckBox.Value", com.criticalrange.CatalystConfig.SKIP_EMPTY_SECTIONS);
+        // Set checkbox values for lighting
+        uiCommandBuilder.set("#SkipEmptyCheckBox.Value", com.criticalrange.CatalystConfig.LIGHT_SKIP_EMPTY_ENABLED);
 
         // Set slider values for chunk generation
         uiCommandBuilder.set("#ChunkThreadPrioritySlider.Value", com.criticalrange.CatalystConfig.CHUNK_THREAD_PRIORITY);
@@ -59,6 +50,11 @@ public class CatalystSettingsGui extends InteractiveCustomUIPage<CatalystSetting
         // Set checkbox values for visual effects
         uiCommandBuilder.set("#ParticlesToggle #CheckBox.Value", com.criticalrange.CatalystConfig.PARTICLES_ENABLED);
         uiCommandBuilder.set("#AnimationsToggle #CheckBox.Value", com.criticalrange.CatalystConfig.ANIMATIONS_ENABLED);
+
+        // Set checkbox values for caching optimizations
+        uiCommandBuilder.set("#BlockSectionCacheCheckBox.Value", com.criticalrange.CatalystConfig.BLOCK_SECTION_CACHE_ENABLED);
+        uiCommandBuilder.set("#BlockTypeCacheCheckBox.Value", com.criticalrange.CatalystConfig.BLOCK_TYPE_CACHE_ENABLED);
+        uiCommandBuilder.set("#LocalChunkCacheCheckBox.Value", com.criticalrange.CatalystConfig.LOCAL_CHUNK_CACHE_ENABLED);
 
         // Add event bindings for sliders
         uiEventBuilder.addEventBinding(CustomUIEventBindingType.ValueChanged, "#EntityDistanceSlider",
@@ -75,24 +71,8 @@ public class CatalystSettingsGui extends InteractiveCustomUIPage<CatalystSetting
             EventData.of("@SetTotalNodes", "#TotalNodesSlider.Value"), false);
 
         // Add event bindings for lighting
-        uiEventBuilder.addEventBinding(CustomUIEventBindingType.ValueChanged, "#LightingBatchSlider",
-            EventData.of("@SetLightingBatch", "#LightingBatchSlider.Value"), false);
-        uiEventBuilder.addEventBinding(CustomUIEventBindingType.ValueChanged, "#LightingDistanceSlider",
-            EventData.of("@SetLightingDistance", "#LightingDistanceSlider.Value"), false);
-
-        // Add event bindings for advanced lighting
-        uiEventBuilder.addEventBinding(CustomUIEventBindingType.ValueChanged, "#LightPropOptToggle #CheckBox",
-            EventData.of("ToggleLightPropOpt", "CAT"), false);
-        uiEventBuilder.addEventBinding(CustomUIEventBindingType.ValueChanged, "#OpacityCacheToggle #CheckBox",
-            EventData.of("ToggleOpacityCache", "CAT"), false);
-        uiEventBuilder.addEventBinding(CustomUIEventBindingType.ValueChanged, "#FlatCacheToggle #CheckBox",
-            EventData.of("ToggleFlatCache", "CAT"), false);
-        uiEventBuilder.addEventBinding(CustomUIEventBindingType.ValueChanged, "#QueueOptToggle #CheckBox",
-            EventData.of("ToggleQueueOpt", "CAT"), false);
-        uiEventBuilder.addEventBinding(CustomUIEventBindingType.ValueChanged, "#PackedOpsToggle #CheckBox",
-            EventData.of("TogglePackedOps", "CAT"), false);
-        uiEventBuilder.addEventBinding(CustomUIEventBindingType.ValueChanged, "#SkipEmptyToggle #CheckBox",
-            EventData.of("ToggleSkipEmpty", "CAT"), false);
+        uiEventBuilder.addEventBinding(CustomUIEventBindingType.ValueChanged, "#SkipEmptyCheckBox",
+            EventData.of("ToggleSkipEmptySections", "CAT"), false);
 
         // Add event bindings for chunk generation
         uiEventBuilder.addEventBinding(CustomUIEventBindingType.ValueChanged, "#ChunkThreadPrioritySlider",
@@ -103,6 +83,14 @@ public class CatalystSettingsGui extends InteractiveCustomUIPage<CatalystSetting
             EventData.of("ToggleParticles", "CAT"), false);
         uiEventBuilder.addEventBinding(CustomUIEventBindingType.ValueChanged, "#AnimationsToggle #CheckBox",
             EventData.of("ToggleAnimations", "CAT"), false);
+
+        // Add event bindings for caching optimizations
+        uiEventBuilder.addEventBinding(CustomUIEventBindingType.ValueChanged, "#BlockSectionCacheCheckBox",
+            EventData.of("ToggleBlockSectionCache", "CAT"), false);
+        uiEventBuilder.addEventBinding(CustomUIEventBindingType.ValueChanged, "#BlockTypeCacheCheckBox",
+            EventData.of("ToggleBlockTypeCache", "CAT"), false);
+        uiEventBuilder.addEventBinding(CustomUIEventBindingType.ValueChanged, "#LocalChunkCacheCheckBox",
+            EventData.of("ToggleLocalChunkCache", "CAT"), false);
 
         // Add event binding for reset button
         uiEventBuilder.addEventBinding(CustomUIEventBindingType.Activating, "#ResetButton",
@@ -117,8 +105,6 @@ public class CatalystSettingsGui extends InteractiveCustomUIPage<CatalystSetting
             EventData.of("SwitchTabPathfinding", "CAT"), false);
         uiEventBuilder.addEventBinding(CustomUIEventBindingType.Activating, "#TabVisual",
             EventData.of("SwitchTabVisual", "CAT"), false);
-        uiEventBuilder.addEventBinding(CustomUIEventBindingType.Activating, "#TabAdvanced",
-            EventData.of("SwitchTabAdvanced", "CAT"), false);
     }
 
     @Override
@@ -179,22 +165,12 @@ public class CatalystSettingsGui extends InteractiveCustomUIPage<CatalystSetting
             needUpdate = true;
         }
 
-        // Lighting slider values
-        if (data.lightingBatchValue != null) {
-            int newValue = Math.max(1, Math.min(32, data.lightingBatchValue));
-            setLightingBatchSize(newValue);
-            commandBuilder.set("#LightingBatchSlider.Value", newValue);
+        // Lighting toggle
+        if (data.toggleSkipEmptySections != null) {
+            boolean newState = toggleSkipEmptySections();
+            commandBuilder.set("#SkipEmptyCheckBox.Value", newState);
             player.sendMessage(com.hypixel.hytale.server.core.Message.raw(
-                "Lighting Batch Size: " + newValue));
-            needUpdate = true;
-        }
-
-        if (data.lightingDistanceValue != null) {
-            int newValue = Math.max(2, Math.min(16, data.lightingDistanceValue));
-            setLightingMaxDistance(newValue);
-            commandBuilder.set("#LightingDistanceSlider.Value", newValue);
-            player.sendMessage(com.hypixel.hytale.server.core.Message.raw(
-                "Lighting Max Distance: " + newValue));
+                "Skip Empty Sections: " + (newState ? "ENABLED" : "DISABLED")));
             needUpdate = true;
         }
 
@@ -205,55 +181,6 @@ public class CatalystSettingsGui extends InteractiveCustomUIPage<CatalystSetting
             commandBuilder.set("#ChunkThreadPrioritySlider.Value", newValue);
             player.sendMessage(com.hypixel.hytale.server.core.Message.raw(
                 "Chunk Thread Priority: " + newValue));
-            needUpdate = true;
-        }
-
-        // Advanced lighting toggles
-        if (data.toggleLightPropOpt != null) {
-            boolean newState = toggleLightPropOpt();
-            commandBuilder.set("#LightPropOptToggle #CheckBox.Value", newState);
-            player.sendMessage(com.hypixel.hytale.server.core.Message.raw(
-                "Light Propagation Opt: " + (newState ? "ENABLED" : "DISABLED")));
-            needUpdate = true;
-        }
-
-        if (data.toggleOpacityCache != null) {
-            boolean newState = toggleOpacityCache();
-            commandBuilder.set("#OpacityCacheToggle #CheckBox.Value", newState);
-            player.sendMessage(com.hypixel.hytale.server.core.Message.raw(
-                "Opacity Cache: " + (newState ? "ENABLED" : "DISABLED")));
-            needUpdate = true;
-        }
-
-        if (data.toggleFlatCache != null) {
-            boolean newState = toggleFlatCache();
-            commandBuilder.set("#FlatCacheToggle #CheckBox.Value", newState);
-            player.sendMessage(com.hypixel.hytale.server.core.Message.raw(
-                "Flat Light Cache: " + (newState ? "ENABLED" : "DISABLED")));
-            needUpdate = true;
-        }
-
-        if (data.toggleQueueOpt != null) {
-            boolean newState = toggleQueueOpt();
-            commandBuilder.set("#QueueOptToggle #CheckBox.Value", newState);
-            player.sendMessage(com.hypixel.hytale.server.core.Message.raw(
-                "Queue Optimization: " + (newState ? "ENABLED" : "DISABLED")));
-            needUpdate = true;
-        }
-
-        if (data.togglePackedOps != null) {
-            boolean newState = togglePackedOps();
-            commandBuilder.set("#PackedOpsToggle #CheckBox.Value", newState);
-            player.sendMessage(com.hypixel.hytale.server.core.Message.raw(
-                "Packed Light Ops: " + (newState ? "ENABLED" : "DISABLED")));
-            needUpdate = true;
-        }
-
-        if (data.toggleSkipEmpty != null) {
-            boolean newState = toggleSkipEmpty();
-            commandBuilder.set("#SkipEmptyToggle #CheckBox.Value", newState);
-            player.sendMessage(com.hypixel.hytale.server.core.Message.raw(
-                "Skip Empty Sections: " + (newState ? "ENABLED" : "DISABLED")));
             needUpdate = true;
         }
 
@@ -271,6 +198,31 @@ public class CatalystSettingsGui extends InteractiveCustomUIPage<CatalystSetting
             commandBuilder.set("#AnimationsToggle #CheckBox.Value", newState);
             player.sendMessage(com.hypixel.hytale.server.core.Message.raw(
                 "NPC Animations: " + (newState ? "ENABLED" : "DISABLED")));
+            needUpdate = true;
+        }
+
+        // Caching optimization toggles
+        if (data.toggleBlockSectionCache != null) {
+            boolean newState = toggleBlockSectionCache();
+            commandBuilder.set("#BlockSectionCacheCheckBox.Value", newState);
+            player.sendMessage(com.hypixel.hytale.server.core.Message.raw(
+                "Block Section Cache: " + (newState ? "ENABLED" : "DISABLED")));
+            needUpdate = true;
+        }
+
+        if (data.toggleBlockTypeCache != null) {
+            boolean newState = toggleBlockTypeCache();
+            commandBuilder.set("#BlockTypeCacheCheckBox.Value", newState);
+            player.sendMessage(com.hypixel.hytale.server.core.Message.raw(
+                "Block Type Cache: " + (newState ? "ENABLED" : "DISABLED")));
+            needUpdate = true;
+        }
+
+        if (data.toggleLocalChunkCache != null) {
+            boolean newState = toggleLocalChunkCache();
+            commandBuilder.set("#LocalChunkCacheCheckBox.Value", newState);
+            player.sendMessage(com.hypixel.hytale.server.core.Message.raw(
+                "Local Chunk Cache: " + (newState ? "ENABLED" : "DISABLED")));
             needUpdate = true;
         }
 
@@ -299,10 +251,6 @@ public class CatalystSettingsGui extends InteractiveCustomUIPage<CatalystSetting
             switchToTab(commandBuilder, "Visual");
             needUpdate = true;
         }
-        if (data.switchTabAdvanced != null) {
-            switchToTab(commandBuilder, "Advanced");
-            needUpdate = true;
-        }
 
         if (needUpdate) {
             this.sendUpdate(commandBuilder, eventBuilder, false);
@@ -319,21 +267,18 @@ public class CatalystSettingsGui extends InteractiveCustomUIPage<CatalystSetting
         commandBuilder.set("#PanelLighting.Visible", false);
         commandBuilder.set("#PanelPathfinding.Visible", false);
         commandBuilder.set("#PanelVisual.Visible", false);
-        commandBuilder.set("#PanelAdvanced.Visible", false);
 
         // Reset all indicators
         commandBuilder.set("#IndicatorGeneral.Background", "#12151c");
         commandBuilder.set("#IndicatorLighting.Background", "#12151c");
         commandBuilder.set("#IndicatorPathfinding.Background", "#12151c");
         commandBuilder.set("#IndicatorVisual.Background", "#12151c");
-        commandBuilder.set("#IndicatorAdvanced.Background", "#12151c");
 
         // Reset all tab buttons to unselected style
         commandBuilder.set("#TabGeneral.Background", "#1a1d26");
         commandBuilder.set("#TabLighting.Background", "#1a1d26");
         commandBuilder.set("#TabPathfinding.Background", "#1a1d26");
         commandBuilder.set("#TabVisual.Background", "#1a1d26");
-        commandBuilder.set("#TabAdvanced.Background", "#1a1d26");
 
         // Show selected panel, indicator, and tab button
         switch (tabName) {
@@ -356,11 +301,6 @@ public class CatalystSettingsGui extends InteractiveCustomUIPage<CatalystSetting
                 commandBuilder.set("#PanelVisual.Visible", true);
                 commandBuilder.set("#IndicatorVisual.Background", "#55aaff");
                 commandBuilder.set("#TabVisual.Background", "#2d3444");
-                break;
-            case "Advanced":
-                commandBuilder.set("#PanelAdvanced.Visible", true);
-                commandBuilder.set("#IndicatorAdvanced.Background", "#55aaff");
-                commandBuilder.set("#TabAdvanced.Background", "#2d3444");
                 break;
         }
     }
@@ -477,85 +417,7 @@ public class CatalystSettingsGui extends InteractiveCustomUIPage<CatalystSetting
         }
     }
 
-    // ===== Lighting Toggles and Setters =====
 
-    private boolean toggleLightingBatch() {
-        com.criticalrange.CatalystConfig.LIGHTING_BATCH_ENABLED = !com.criticalrange.CatalystConfig.LIGHTING_BATCH_ENABLED;
-        return com.criticalrange.CatalystConfig.LIGHTING_BATCH_ENABLED;
-    }
-
-    private void setLightingBatchSize(int value) {
-        com.criticalrange.CatalystConfig.LIGHTING_BATCH_SIZE = value;
-    }
-
-    private boolean toggleLightingDistance() {
-        com.criticalrange.CatalystConfig.LIGHTING_DISTANCE_ENABLED = !com.criticalrange.CatalystConfig.LIGHTING_DISTANCE_ENABLED;
-        return com.criticalrange.CatalystConfig.LIGHTING_DISTANCE_ENABLED;
-    }
-
-    private void setLightingMaxDistance(int value) {
-        com.criticalrange.CatalystConfig.LIGHTING_MAX_DISTANCE = value;
-    }
-
-    // ===== Advanced Lighting Toggles =====
-
-    private boolean toggleLightPropOpt() {
-        boolean newState = !com.criticalrange.CatalystConfig.LIGHT_PROP_OPT_ENABLED;
-        com.criticalrange.CatalystConfig.LIGHT_PROP_OPT_ENABLED = newState;
-        syncAdvancedLightingField("com.hypixel.hytale.server.core.universe.world.lighting.FloodLightCalculation",
-            "$catalystLightPropOptEnabled", newState);
-        return newState;
-    }
-
-    private boolean toggleOpacityCache() {
-        boolean newState = !com.criticalrange.CatalystConfig.OPACITY_CACHE_ENABLED;
-        com.criticalrange.CatalystConfig.OPACITY_CACHE_ENABLED = newState;
-        syncAdvancedLightingField("com.hypixel.hytale.server.core.universe.world.lighting.FloodLightCalculation",
-            "$catalystOpacityCacheEnabled", newState);
-        return newState;
-    }
-
-    private boolean toggleFlatCache() {
-        boolean newState = !com.criticalrange.CatalystConfig.LIGHT_FLAT_CACHE_ENABLED;
-        com.criticalrange.CatalystConfig.LIGHT_FLAT_CACHE_ENABLED = newState;
-        syncAdvancedLightingField("com.hypixel.hytale.server.core.universe.world.chunk.section.ChunkLightDataBuilder",
-            "$catalystFlatCacheEnabled", newState);
-        return newState;
-    }
-
-    private boolean toggleQueueOpt() {
-        boolean newState = !com.criticalrange.CatalystConfig.LIGHT_QUEUE_OPT_ENABLED;
-        com.criticalrange.CatalystConfig.LIGHT_QUEUE_OPT_ENABLED = newState;
-        syncAdvancedLightingField("com.hypixel.hytale.server.core.universe.world.lighting.FloodLightCalculation",
-            "$catalystQueueOptEnabled", newState);
-        return newState;
-    }
-
-    private boolean togglePackedOps() {
-        boolean newState = !com.criticalrange.CatalystConfig.PACKED_LIGHT_OPS_ENABLED;
-        com.criticalrange.CatalystConfig.PACKED_LIGHT_OPS_ENABLED = newState;
-        syncAdvancedLightingField("com.hypixel.hytale.server.core.universe.world.chunk.section.ChunkLightData",
-            "$catalystPackedOpsEnabled", newState);
-        return newState;
-    }
-
-    private boolean toggleSkipEmpty() {
-        boolean newState = !com.criticalrange.CatalystConfig.SKIP_EMPTY_SECTIONS;
-        com.criticalrange.CatalystConfig.SKIP_EMPTY_SECTIONS = newState;
-        syncAdvancedLightingField("com.hypixel.hytale.server.core.universe.world.lighting.FloodLightCalculation",
-            "$catalystSkipEmptySections", newState);
-        return newState;
-    }
-
-    private void syncAdvancedLightingField(String className, String fieldName, boolean value) {
-        try {
-            Class<?> clazz = Class.forName(className);
-            java.lang.reflect.Field field = clazz.getField(fieldName);
-            field.setBoolean(null, value);
-        } catch (Exception e) {
-            System.err.println("[Catalyst] Failed to sync " + fieldName + ": " + e.getMessage());
-        }
-    }
 
     // ===== Chunk Generation Toggles and Setters =====
 
@@ -568,12 +430,36 @@ public class CatalystSettingsGui extends InteractiveCustomUIPage<CatalystSetting
         com.criticalrange.CatalystConfig.CHUNK_THREAD_PRIORITY = value;
     }
 
+    // ===== Lighting Toggles =====
+
+    private boolean toggleSkipEmptySections() {
+        boolean newState = !com.criticalrange.CatalystConfig.LIGHT_SKIP_EMPTY_ENABLED;
+        com.criticalrange.CatalystConfig.LIGHT_SKIP_EMPTY_ENABLED = newState;
+        // Sync to injected field
+        try {
+            Class<?> floodLightClass = Class.forName("com.hypixel.hytale.server.core.universe.world.lighting.FloodLightCalculation");
+            java.lang.reflect.Field field = floodLightClass.getField("$catalystSkipEmptyEnabled");
+            field.setBoolean(null, newState);
+        } catch (Exception e) {
+            // Field may not exist if transformer didn't run
+        }
+        return newState;
+    }
+
     // ===== Visual Effects Toggles =====
 
     private boolean toggleParticles() {
         boolean newState = !VisualEffectsToggle.particlesEnabled;
         VisualEffectsToggle.particlesEnabled = newState;
         com.criticalrange.CatalystConfig.PARTICLES_ENABLED = newState;
+        // Sync to injected field in Hytale class
+        try {
+            Class<?> particleUtilClass = Class.forName("com.hypixel.hytale.server.core.universe.world.ParticleUtil");
+            java.lang.reflect.Field field = particleUtilClass.getField("$catalystParticlesEnabled");
+            field.setBoolean(null, newState);
+        } catch (Exception e) {
+            // Field may not exist if transformer didn't run
+        }
         return newState;
     }
 
@@ -581,6 +467,58 @@ public class CatalystSettingsGui extends InteractiveCustomUIPage<CatalystSetting
         boolean newState = !VisualEffectsToggle.animationsEnabled;
         VisualEffectsToggle.animationsEnabled = newState;
         com.criticalrange.CatalystConfig.ANIMATIONS_ENABLED = newState;
+        // Sync to injected field in Hytale class
+        try {
+            Class<?> animationUtilsClass = Class.forName("com.hypixel.hytale.server.core.entity.AnimationUtils");
+            java.lang.reflect.Field field = animationUtilsClass.getField("$catalystAnimationsEnabled");
+            field.setBoolean(null, newState);
+        } catch (Exception e) {
+            // Field may not exist if transformer didn't run
+        }
+        return newState;
+    }
+
+    // ===== Caching Optimization Toggles =====
+
+    private boolean toggleBlockSectionCache() {
+        boolean newState = !com.criticalrange.CatalystConfig.BLOCK_SECTION_CACHE_ENABLED;
+        com.criticalrange.CatalystConfig.BLOCK_SECTION_CACHE_ENABLED = newState;
+        // Sync to injected field
+        try {
+            Class<?> blockChunkClass = Class.forName("com.hypixel.hytale.server.core.universe.world.chunk.BlockChunk");
+            java.lang.reflect.Field field = blockChunkClass.getField("$catalystSectionCacheEnabled");
+            field.setBoolean(null, newState);
+        } catch (Exception e) {
+            // Field may not exist if transformer didn't run
+        }
+        return newState;
+    }
+
+    private boolean toggleBlockTypeCache() {
+        boolean newState = !com.criticalrange.CatalystConfig.BLOCK_TYPE_CACHE_ENABLED;
+        com.criticalrange.CatalystConfig.BLOCK_TYPE_CACHE_ENABLED = newState;
+        // Sync to injected field
+        try {
+            Class<?> assetMapClass = Class.forName("com.hypixel.hytale.assetstore.map.BlockTypeAssetMap");
+            java.lang.reflect.Field field = assetMapClass.getField("$catalystBlockTypeCacheEnabled");
+            field.setBoolean(null, newState);
+        } catch (Exception e) {
+            // Field may not exist if transformer didn't run
+        }
+        return newState;
+    }
+
+    private boolean toggleLocalChunkCache() {
+        boolean newState = !com.criticalrange.CatalystConfig.LOCAL_CHUNK_CACHE_ENABLED;
+        com.criticalrange.CatalystConfig.LOCAL_CHUNK_CACHE_ENABLED = newState;
+        // Sync to injected field
+        try {
+            Class<?> accessorClass = Class.forName("com.hypixel.hytale.server.core.universe.world.accessor.LocalCachedChunkAccessor");
+            java.lang.reflect.Field field = accessorClass.getField("$catalystLocalChunkCacheEnabled");
+            field.setBoolean(null, newState);
+        } catch (Exception e) {
+            // Field may not exist if transformer didn't run
+        }
         return newState;
     }
 
@@ -594,47 +532,45 @@ public class CatalystSettingsGui extends InteractiveCustomUIPage<CatalystSetting
         if (com.criticalrange.CatalystConfig.ENTITY_DISTANCE_ENABLED) {
             toggleEntityDistance();  // Toggle to false
         }
-        if (com.criticalrange.CatalystConfig.ENTITY_VIEW_MULTIPLIER != 32) {
-            setEntityViewMultiplier(32);
+        if (com.criticalrange.CatalystConfig.ENTITY_VIEW_MULTIPLIER != com.criticalrange.CatalystConfig.DEFAULT_BLOCKS_PER_CHUNK) {
+            setEntityViewMultiplier(com.criticalrange.CatalystConfig.DEFAULT_BLOCKS_PER_CHUNK);
         }
 
         if (com.criticalrange.CatalystConfig.CHUNK_RATE_ENABLED) {
             toggleChunkRate();  // Toggle to false
         }
-        if (com.criticalrange.CatalystConfig.CHUNKS_PER_TICK != 4) {
-            setChunksPerTick(4);
+        if (com.criticalrange.CatalystConfig.CHUNKS_PER_TICK != com.criticalrange.CatalystConfig.DEFAULT_CHUNKS_PER_TICK) {
+            setChunksPerTick(com.criticalrange.CatalystConfig.DEFAULT_CHUNKS_PER_TICK);
         }
 
         // Pathfinding defaults (disabled, vanilla limits)
         if (com.criticalrange.CatalystConfig.PATHFINDING_ENABLED) {
             togglePathfinding();  // Toggle to false
         }
-        if (com.criticalrange.CatalystConfig.MAX_PATH_LENGTH != 200) {
-            setMaxPathLength(200);
+        if (com.criticalrange.CatalystConfig.MAX_PATH_LENGTH != com.criticalrange.CatalystConfig.DEFAULT_MAX_PATH_LENGTH) {
+            setMaxPathLength(com.criticalrange.CatalystConfig.DEFAULT_MAX_PATH_LENGTH);
         }
-        if (com.criticalrange.CatalystConfig.OPEN_NODES_LIMIT != 80) {
-            setOpenNodesLimit(80);
+        if (com.criticalrange.CatalystConfig.OPEN_NODES_LIMIT != com.criticalrange.CatalystConfig.DEFAULT_OPEN_NODES_LIMIT) {
+            setOpenNodesLimit(com.criticalrange.CatalystConfig.DEFAULT_OPEN_NODES_LIMIT);
         }
-        if (com.criticalrange.CatalystConfig.TOTAL_NODES_LIMIT != 400) {
-            setTotalNodesLimit(400);
+        if (com.criticalrange.CatalystConfig.TOTAL_NODES_LIMIT != com.criticalrange.CatalystConfig.DEFAULT_TOTAL_NODES_LIMIT) {
+            setTotalNodesLimit(com.criticalrange.CatalystConfig.DEFAULT_TOTAL_NODES_LIMIT);
         }
 
         // Lighting defaults
-        com.criticalrange.CatalystConfig.LIGHTING_BATCH_ENABLED = false;
-        com.criticalrange.CatalystConfig.LIGHTING_BATCH_SIZE = 8;
-        com.criticalrange.CatalystConfig.LIGHTING_DISTANCE_ENABLED = false;
-        com.criticalrange.CatalystConfig.LIGHTING_MAX_DISTANCE = 8;
-
-        // Advanced lighting defaults (all enabled by default)
-        // Note: These only update config values - no transformers implemented yet
-        com.criticalrange.CatalystConfig.LIGHT_PROP_OPT_ENABLED = true;
-        com.criticalrange.CatalystConfig.OPACITY_CACHE_ENABLED = true;
-        com.criticalrange.CatalystConfig.LIGHT_FLAT_CACHE_ENABLED = true;
-        com.criticalrange.CatalystConfig.LIGHT_QUEUE_OPT_ENABLED = true;
-        com.criticalrange.CatalystConfig.PACKED_LIGHT_OPS_ENABLED = true;
-        com.criticalrange.CatalystConfig.SKIP_EMPTY_SECTIONS = true;
+        com.criticalrange.CatalystConfig.LIGHT_SKIP_EMPTY_ENABLED = false;
+        // Sync to injected field
+        try {
+            Class<?> floodLightClass = Class.forName("com.hypixel.hytale.server.core.universe.world.lighting.FloodLightCalculation");
+            java.lang.reflect.Field field = floodLightClass.getField("$catalystSkipEmptyEnabled");
+            field.setBoolean(null, false);
+        } catch (Exception e) {
+            // Field may not exist if transformer didn't run
+        }
 
         // Chunk generation defaults
+        com.criticalrange.CatalystConfig.CHUNK_POOL_SIZE_ENABLED = false;
+        com.criticalrange.CatalystConfig.CHUNK_CACHE_SIZE_ENABLED = false;
         com.criticalrange.CatalystConfig.CHUNK_THREAD_PRIORITY_ENABLED = false;
         com.criticalrange.CatalystConfig.CHUNK_THREAD_PRIORITY = 5;
 
@@ -644,23 +580,37 @@ public class CatalystSettingsGui extends InteractiveCustomUIPage<CatalystSetting
         com.criticalrange.CatalystConfig.PARTICLES_ENABLED = true;
         com.criticalrange.CatalystConfig.ANIMATIONS_ENABLED = true;
 
+        // Caching defaults (disabled by default)
+        com.criticalrange.CatalystConfig.BLOCK_SECTION_CACHE_ENABLED = false;
+        com.criticalrange.CatalystConfig.BLOCK_TYPE_CACHE_ENABLED = false;
+        com.criticalrange.CatalystConfig.LOCAL_CHUNK_CACHE_ENABLED = false;
+        // Sync to injected fields
+        try {
+            Class<?> blockChunkClass = Class.forName("com.hypixel.hytale.server.core.universe.world.chunk.BlockChunk");
+            blockChunkClass.getField("$catalystSectionCacheEnabled").setBoolean(null, false);
+        } catch (Exception e) { /* ignore */ }
+        try {
+            Class<?> assetMapClass = Class.forName("com.hypixel.hytale.assetstore.map.BlockTypeAssetMap");
+            assetMapClass.getField("$catalystBlockTypeCacheEnabled").setBoolean(null, false);
+        } catch (Exception e) { /* ignore */ }
+        try {
+            Class<?> accessorClass = Class.forName("com.hypixel.hytale.server.core.universe.world.accessor.LocalCachedChunkAccessor");
+            accessorClass.getField("$catalystLocalChunkCacheEnabled").setBoolean(null, false);
+        } catch (Exception e) { /* ignore */ }
+
         // Update all UI elements to reflect default values
-        commandBuilder.set("#EntityDistanceSlider.Value", 32);
-        commandBuilder.set("#ChunkRateSlider.Value", 4);
-        commandBuilder.set("#MaxPathLengthSlider.Value", 200);
-        commandBuilder.set("#OpenNodesSlider.Value", 80);
-        commandBuilder.set("#TotalNodesSlider.Value", 400);
-        commandBuilder.set("#LightingBatchSlider.Value", 8);
-        commandBuilder.set("#LightingDistanceSlider.Value", 8);
-        commandBuilder.set("#ChunkThreadPrioritySlider.Value", 5);
+        commandBuilder.set("#EntityDistanceSlider.Value", com.criticalrange.CatalystConfig.DEFAULT_BLOCKS_PER_CHUNK);
+        commandBuilder.set("#ChunkRateSlider.Value", com.criticalrange.CatalystConfig.DEFAULT_CHUNKS_PER_TICK);
+        commandBuilder.set("#MaxPathLengthSlider.Value", com.criticalrange.CatalystConfig.DEFAULT_MAX_PATH_LENGTH);
+        commandBuilder.set("#OpenNodesSlider.Value", com.criticalrange.CatalystConfig.DEFAULT_OPEN_NODES_LIMIT);
+        commandBuilder.set("#TotalNodesSlider.Value", com.criticalrange.CatalystConfig.DEFAULT_TOTAL_NODES_LIMIT);
+        commandBuilder.set("#SkipEmptyCheckBox.Value", false);
+        commandBuilder.set("#ChunkThreadPrioritySlider.Value", Thread.NORM_PRIORITY);
         commandBuilder.set("#ParticlesToggle #CheckBox.Value", true);
         commandBuilder.set("#AnimationsToggle #CheckBox.Value", true);
-        commandBuilder.set("#LightPropOptToggle #CheckBox.Value", true);
-        commandBuilder.set("#OpacityCacheToggle #CheckBox.Value", true);
-        commandBuilder.set("#FlatCacheToggle #CheckBox.Value", true);
-        commandBuilder.set("#QueueOptToggle #CheckBox.Value", true);
-        commandBuilder.set("#PackedOpsToggle #CheckBox.Value", true);
-        commandBuilder.set("#SkipEmptyToggle #CheckBox.Value", true);
+        commandBuilder.set("#BlockSectionCacheCheckBox.Value", false);
+        commandBuilder.set("#BlockTypeCacheCheckBox.Value", false);
+        commandBuilder.set("#LocalChunkCacheCheckBox.Value", false);
     }
 
     /**
@@ -672,23 +622,18 @@ public class CatalystSettingsGui extends InteractiveCustomUIPage<CatalystSetting
         static final String KEY_SET_MAX_PATH_LENGTH = "@SetMaxPathLength";
         static final String KEY_SET_OPEN_NODES = "@SetOpenNodes";
         static final String KEY_SET_TOTAL_NODES = "@SetTotalNodes";
-        static final String KEY_SET_LIGHTING_BATCH = "@SetLightingBatch";
-        static final String KEY_SET_LIGHTING_DISTANCE = "@SetLightingDistance";
+        static final String KEY_TOGGLE_SKIP_EMPTY_SECTIONS = "ToggleSkipEmptySections";
         static final String KEY_SET_CHUNK_THREAD_PRIORITY = "@SetChunkThreadPriority";
         static final String KEY_TOGGLE_PARTICLES = "ToggleParticles";
         static final String KEY_TOGGLE_ANIMATIONS = "ToggleAnimations";
-        static final String KEY_TOGGLE_LIGHT_PROP_OPT = "ToggleLightPropOpt";
-        static final String KEY_TOGGLE_OPACITY_CACHE = "ToggleOpacityCache";
-        static final String KEY_TOGGLE_FLAT_CACHE = "ToggleFlatCache";
-        static final String KEY_TOGGLE_QUEUE_OPT = "ToggleQueueOpt";
-        static final String KEY_TOGGLE_PACKED_OPS = "TogglePackedOps";
-        static final String KEY_TOGGLE_SKIP_EMPTY = "ToggleSkipEmpty";
         static final String KEY_RESET_TO_DEFAULTS = "ResetToDefaults";
         static final String KEY_SWITCH_TAB_GENERAL = "SwitchTabGeneral";
         static final String KEY_SWITCH_TAB_LIGHTING = "SwitchTabLighting";
         static final String KEY_SWITCH_TAB_PATHFINDING = "SwitchTabPathfinding";
         static final String KEY_SWITCH_TAB_VISUAL = "SwitchTabVisual";
-        static final String KEY_SWITCH_TAB_ADVANCED = "SwitchTabAdvanced";
+        static final String KEY_TOGGLE_BLOCK_SECTION_CACHE = "ToggleBlockSectionCache";
+        static final String KEY_TOGGLE_BLOCK_TYPE_CACHE = "ToggleBlockTypeCache";
+        static final String KEY_TOGGLE_LOCAL_CHUNK_CACHE = "ToggleLocalChunkCache";
 
         public static final BuilderCodec<GuiData> CODEC = BuilderCodec.builder(GuiData.class, GuiData::new)
                 .addField(new KeyedCodec<>(KEY_SET_ENTITY_DISTANCE, Codec.INTEGER),
@@ -701,28 +646,14 @@ public class CatalystSettingsGui extends InteractiveCustomUIPage<CatalystSetting
                     (guiData, i) -> guiData.openNodesValue = i, guiData -> guiData.openNodesValue)
                 .addField(new KeyedCodec<>(KEY_SET_TOTAL_NODES, Codec.INTEGER),
                     (guiData, i) -> guiData.totalNodesValue = i, guiData -> guiData.totalNodesValue)
-                .addField(new KeyedCodec<>(KEY_SET_LIGHTING_BATCH, Codec.INTEGER),
-                    (guiData, i) -> guiData.lightingBatchValue = i, guiData -> guiData.lightingBatchValue)
-                .addField(new KeyedCodec<>(KEY_SET_LIGHTING_DISTANCE, Codec.INTEGER),
-                    (guiData, i) -> guiData.lightingDistanceValue = i, guiData -> guiData.lightingDistanceValue)
+                .addField(new KeyedCodec<>(KEY_TOGGLE_SKIP_EMPTY_SECTIONS, Codec.STRING),
+                    (guiData, s) -> guiData.toggleSkipEmptySections = s, guiData -> guiData.toggleSkipEmptySections)
                 .addField(new KeyedCodec<>(KEY_SET_CHUNK_THREAD_PRIORITY, Codec.INTEGER),
                     (guiData, i) -> guiData.chunkThreadPriorityValue = i, guiData -> guiData.chunkThreadPriorityValue)
                 .addField(new KeyedCodec<>(KEY_TOGGLE_PARTICLES, Codec.STRING),
                     (guiData, s) -> guiData.toggleParticles = s, guiData -> guiData.toggleParticles)
                 .addField(new KeyedCodec<>(KEY_TOGGLE_ANIMATIONS, Codec.STRING),
                     (guiData, s) -> guiData.toggleAnimations = s, guiData -> guiData.toggleAnimations)
-                .addField(new KeyedCodec<>(KEY_TOGGLE_LIGHT_PROP_OPT, Codec.STRING),
-                    (guiData, s) -> guiData.toggleLightPropOpt = s, guiData -> guiData.toggleLightPropOpt)
-                .addField(new KeyedCodec<>(KEY_TOGGLE_OPACITY_CACHE, Codec.STRING),
-                    (guiData, s) -> guiData.toggleOpacityCache = s, guiData -> guiData.toggleOpacityCache)
-                .addField(new KeyedCodec<>(KEY_TOGGLE_FLAT_CACHE, Codec.STRING),
-                    (guiData, s) -> guiData.toggleFlatCache = s, guiData -> guiData.toggleFlatCache)
-                .addField(new KeyedCodec<>(KEY_TOGGLE_QUEUE_OPT, Codec.STRING),
-                    (guiData, s) -> guiData.toggleQueueOpt = s, guiData -> guiData.toggleQueueOpt)
-                .addField(new KeyedCodec<>(KEY_TOGGLE_PACKED_OPS, Codec.STRING),
-                    (guiData, s) -> guiData.togglePackedOps = s, guiData -> guiData.togglePackedOps)
-                .addField(new KeyedCodec<>(KEY_TOGGLE_SKIP_EMPTY, Codec.STRING),
-                    (guiData, s) -> guiData.toggleSkipEmpty = s, guiData -> guiData.toggleSkipEmpty)
                 .addField(new KeyedCodec<>(KEY_RESET_TO_DEFAULTS, Codec.STRING),
                     (guiData, s) -> guiData.resetToDefaults = s, guiData -> guiData.resetToDefaults)
                 .addField(new KeyedCodec<>(KEY_SWITCH_TAB_GENERAL, Codec.STRING),
@@ -733,8 +664,12 @@ public class CatalystSettingsGui extends InteractiveCustomUIPage<CatalystSetting
                     (guiData, s) -> guiData.switchTabPathfinding = s, guiData -> guiData.switchTabPathfinding)
                 .addField(new KeyedCodec<>(KEY_SWITCH_TAB_VISUAL, Codec.STRING),
                     (guiData, s) -> guiData.switchTabVisual = s, guiData -> guiData.switchTabVisual)
-                .addField(new KeyedCodec<>(KEY_SWITCH_TAB_ADVANCED, Codec.STRING),
-                    (guiData, s) -> guiData.switchTabAdvanced = s, guiData -> guiData.switchTabAdvanced)
+                .addField(new KeyedCodec<>(KEY_TOGGLE_BLOCK_SECTION_CACHE, Codec.STRING),
+                    (guiData, s) -> guiData.toggleBlockSectionCache = s, guiData -> guiData.toggleBlockSectionCache)
+                .addField(new KeyedCodec<>(KEY_TOGGLE_BLOCK_TYPE_CACHE, Codec.STRING),
+                    (guiData, s) -> guiData.toggleBlockTypeCache = s, guiData -> guiData.toggleBlockTypeCache)
+                .addField(new KeyedCodec<>(KEY_TOGGLE_LOCAL_CHUNK_CACHE, Codec.STRING),
+                    (guiData, s) -> guiData.toggleLocalChunkCache = s, guiData -> guiData.toggleLocalChunkCache)
                 .build();
 
         private Integer entityDistanceValue;
@@ -742,22 +677,17 @@ public class CatalystSettingsGui extends InteractiveCustomUIPage<CatalystSetting
         private Integer maxPathLengthValue;
         private Integer openNodesValue;
         private Integer totalNodesValue;
-        private Integer lightingBatchValue;
-        private Integer lightingDistanceValue;
+        private String toggleSkipEmptySections;
         private Integer chunkThreadPriorityValue;
         private String toggleParticles;
         private String toggleAnimations;
-        private String toggleLightPropOpt;
-        private String toggleOpacityCache;
-        private String toggleFlatCache;
-        private String toggleQueueOpt;
-        private String togglePackedOps;
-        private String toggleSkipEmpty;
         private String resetToDefaults;
         private String switchTabGeneral;
         private String switchTabLighting;
         private String switchTabPathfinding;
         private String switchTabVisual;
-        private String switchTabAdvanced;
+        private String toggleBlockSectionCache;
+        private String toggleBlockTypeCache;
+        private String toggleLocalChunkCache;
     }
 }

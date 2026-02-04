@@ -31,21 +31,75 @@ public class CatalystMetrics {
 
         // Runtime optimizations status
         sb.append("\n-- Runtime Optimizations --\n");
-        sb.append(String.format("  Entity Distance: %s\n", 
-            com.criticalrange.CatalystConfig.ENTITY_DISTANCE_ENABLED ? "ENABLED" : "DISABLED"));
-        sb.append(String.format("  Chunk Rate: %s\n", 
-            com.criticalrange.CatalystConfig.CHUNK_RATE_ENABLED ? "ENABLED" : "DISABLED"));
-
-        // Configuration values
-        sb.append("\n-- Configuration --\n");
-        sb.append(String.format("  Entity View Multiplier: %d (default 32)\n", 
+        sb.append(String.format("  Entity Distance: %s (multiplier: %d)\n", 
+            status(com.criticalrange.CatalystConfig.ENTITY_DISTANCE_ENABLED),
             com.criticalrange.CatalystConfig.ENTITY_VIEW_MULTIPLIER));
-        sb.append(String.format("  Chunks Per Tick: %d (default 4)\n", 
+        sb.append(String.format("  Chunk Rate: %s (chunks/tick: %d)\n", 
+            status(com.criticalrange.CatalystConfig.CHUNK_RATE_ENABLED),
             com.criticalrange.CatalystConfig.CHUNKS_PER_TICK));
+
+        // Pathfinding
+        sb.append("\n-- Pathfinding --\n");
+        sb.append(String.format("  Custom Limits: %s\n", 
+            status(com.criticalrange.CatalystConfig.PATHFINDING_ENABLED)));
+        sb.append(String.format("  Max Path Length: %d (default 200)\n", 
+            com.criticalrange.CatalystConfig.MAX_PATH_LENGTH));
+        sb.append(String.format("  Open Nodes Limit: %d (default 80)\n", 
+            com.criticalrange.CatalystConfig.OPEN_NODES_LIMIT));
+        sb.append(String.format("  Total Nodes Limit: %d (default 400)\n", 
+            com.criticalrange.CatalystConfig.TOTAL_NODES_LIMIT));
+
+        // Chunk Generation
+        sb.append("\n-- Chunk Generation --\n");
+        sb.append(String.format("  Pool Size Override: %s (size: %d)\n", 
+            status(com.criticalrange.CatalystConfig.CHUNK_POOL_SIZE_ENABLED),
+            com.criticalrange.CatalystConfig.CHUNK_POOL_SIZE));
+        sb.append(String.format("  Cache Size Override: %s\n", 
+            status(com.criticalrange.CatalystConfig.CHUNK_CACHE_SIZE_ENABLED)));
+        if (com.criticalrange.CatalystConfig.CHUNK_CACHE_SIZE_ENABLED) {
+            sb.append(String.format("    Generator Cache: %d\n", 
+                com.criticalrange.CatalystConfig.GENERATOR_CACHE_SIZE));
+            sb.append(String.format("    Cave Cache: %d\n", 
+                com.criticalrange.CatalystConfig.CAVE_CACHE_SIZE));
+            sb.append(String.format("    Prefab Cache: %d\n", 
+                com.criticalrange.CatalystConfig.PREFAB_CACHE_SIZE));
+        }
+        sb.append(String.format("  Thread Priority Override: %s (priority: %d)\n", 
+            status(com.criticalrange.CatalystConfig.CHUNK_THREAD_PRIORITY_ENABLED),
+            com.criticalrange.CatalystConfig.CHUNK_THREAD_PRIORITY));
+
+        // Lighting
+        sb.append("\n-- Lighting --\n");
+        sb.append(String.format("  Skip Empty Sections: %s\n", 
+            status(com.criticalrange.CatalystConfig.LIGHT_SKIP_EMPTY_ENABLED)));
+
+        // Visual Effects
+        sb.append("\n-- Visual Effects --\n");
+        sb.append(String.format("  Particles: %s\n", 
+            status(com.criticalrange.CatalystConfig.PARTICLES_ENABLED)));
+        sb.append(String.format("  Animations: %s\n", 
+            status(com.criticalrange.CatalystConfig.ANIMATIONS_ENABLED)));
+
+        // Caching Optimizations
+        sb.append("\n-- Caching Optimizations --\n");
+        sb.append(String.format("  Block Section Cache: %s\n", 
+            status(com.criticalrange.CatalystConfig.BLOCK_SECTION_CACHE_ENABLED)));
+        sb.append(String.format("  Block Type Cache: %s (size: %d)\n", 
+            status(com.criticalrange.CatalystConfig.BLOCK_TYPE_CACHE_ENABLED),
+            com.criticalrange.CatalystConfig.BLOCK_TYPE_CACHE_SIZE));
+        sb.append(String.format("  Local Chunk Cache: %s\n", 
+            status(com.criticalrange.CatalystConfig.LOCAL_CHUNK_CACHE_ENABLED)));
 
         sb.append("==============================================\n");
 
         return sb.toString();
+    }
+
+    /**
+     * Returns a formatted status string for boolean config values.
+     */
+    private static String status(boolean enabled) {
+        return enabled ? "ON" : "OFF";
     }
 
     /**

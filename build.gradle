@@ -350,7 +350,7 @@ task runServer(type: JavaExec) {
         "--early-plugins=earlyplugins"  // Relative to working directory (run/)
     ]
 
-    jvmArgs = ["-Xmx2G", "-Xms1G"]
+    jvmArgs = ["-Xmx4G", "-Xms2G"]
 }
 
 // Task to run the Hytale client via official launcher
@@ -370,11 +370,6 @@ task runClient(type: Exec) {
             def flatpakLauncher = file("/usr/bin/flatpak")
             if (flatpakLauncher.exists()) {
                 logger.lifecycle("Using Flatpak: com.hypixel.HytaleLauncher")
-                logger.lifecycle("")
-                logger.lifecycle("To test your mod:")
-                logger.lifecycle("  1. Use the launcher to start the game")
-                logger.lifecycle("  2. Create a singleplayer world (mods load from embedded server)")
-                logger.lifecycle("  3. Or connect to your local server running ./gradlew runServer")
 
                 commandLine flatpakLauncher, 'run', 'com.hypixel.HytaleLauncher'
                 return
@@ -384,11 +379,6 @@ task runClient(type: Exec) {
             def regularLauncher = file("${hytaleBaseDir}/../HytaleLauncher")
             if (regularLauncher.exists()) {
                 logger.lifecycle("Using launcher: ${regularLauncher}")
-                logger.lifecycle("")
-                logger.lifecycle("To test your mod:")
-                logger.lifecycle("  1. Use the launcher to start the game")
-                logger.lifecycle("  2. Create a singleplayer world (mods load from embedded server)")
-                logger.lifecycle("  3. Or connect to your local server running ./gradlew runServer")
 
                 commandLine regularLauncher
                 return

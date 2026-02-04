@@ -107,6 +107,29 @@ public class CatalystConfigFile {
         CatalystConfig.MAX_PATH_LENGTH = clamp(data.maxPathLength, 50, 500);
         CatalystConfig.OPEN_NODES_LIMIT = clamp(data.openNodesLimit, 20, 200);
         CatalystConfig.TOTAL_NODES_LIMIT = clamp(data.totalNodesLimit, 100, 1000);
+
+        // Chunk generation
+        CatalystConfig.CHUNK_POOL_SIZE_ENABLED = data.chunkPoolSizeEnabled;
+        CatalystConfig.CHUNK_POOL_SIZE = clamp(data.chunkPoolSize, 1, 32);
+        CatalystConfig.CHUNK_CACHE_SIZE_ENABLED = data.chunkCacheSizeEnabled;
+        CatalystConfig.GENERATOR_CACHE_SIZE = clamp(data.generatorCacheSize, 10000, 200000);
+        CatalystConfig.CAVE_CACHE_SIZE = clamp(data.caveCacheSize, 1000, 50000);
+        CatalystConfig.PREFAB_CACHE_SIZE = clamp(data.prefabCacheSize, 10, 500);
+        CatalystConfig.CHUNK_THREAD_PRIORITY_ENABLED = data.chunkThreadPriorityEnabled;
+        CatalystConfig.CHUNK_THREAD_PRIORITY = clamp(data.chunkThreadPriority, Thread.MIN_PRIORITY, Thread.MAX_PRIORITY);
+
+        // Lighting
+        CatalystConfig.LIGHT_SKIP_EMPTY_ENABLED = data.lightSkipEmptyEnabled;
+
+        // Visual effects
+        CatalystConfig.PARTICLES_ENABLED = data.particlesEnabled;
+        CatalystConfig.ANIMATIONS_ENABLED = data.animationsEnabled;
+
+        // Caching optimizations
+        CatalystConfig.BLOCK_SECTION_CACHE_ENABLED = data.blockSectionCacheEnabled;
+        CatalystConfig.BLOCK_TYPE_CACHE_ENABLED = data.blockTypeCacheEnabled;
+        CatalystConfig.BLOCK_TYPE_CACHE_SIZE = clamp(data.blockTypeCacheSize, 64, 1024);
+        CatalystConfig.LOCAL_CHUNK_CACHE_ENABLED = data.localChunkCacheEnabled;
     }
 
     /**
@@ -127,6 +150,29 @@ public class CatalystConfigFile {
         data.openNodesLimit = CatalystConfig.OPEN_NODES_LIMIT;
         data.totalNodesLimit = CatalystConfig.TOTAL_NODES_LIMIT;
 
+        // Chunk generation
+        data.chunkPoolSizeEnabled = CatalystConfig.CHUNK_POOL_SIZE_ENABLED;
+        data.chunkPoolSize = CatalystConfig.CHUNK_POOL_SIZE;
+        data.chunkCacheSizeEnabled = CatalystConfig.CHUNK_CACHE_SIZE_ENABLED;
+        data.generatorCacheSize = CatalystConfig.GENERATOR_CACHE_SIZE;
+        data.caveCacheSize = CatalystConfig.CAVE_CACHE_SIZE;
+        data.prefabCacheSize = CatalystConfig.PREFAB_CACHE_SIZE;
+        data.chunkThreadPriorityEnabled = CatalystConfig.CHUNK_THREAD_PRIORITY_ENABLED;
+        data.chunkThreadPriority = CatalystConfig.CHUNK_THREAD_PRIORITY;
+
+        // Lighting
+        data.lightSkipEmptyEnabled = CatalystConfig.LIGHT_SKIP_EMPTY_ENABLED;
+
+        // Visual effects
+        data.particlesEnabled = CatalystConfig.PARTICLES_ENABLED;
+        data.animationsEnabled = CatalystConfig.ANIMATIONS_ENABLED;
+
+        // Caching optimizations
+        data.blockSectionCacheEnabled = CatalystConfig.BLOCK_SECTION_CACHE_ENABLED;
+        data.blockTypeCacheEnabled = CatalystConfig.BLOCK_TYPE_CACHE_ENABLED;
+        data.blockTypeCacheSize = CatalystConfig.BLOCK_TYPE_CACHE_SIZE;
+        data.localChunkCacheEnabled = CatalystConfig.LOCAL_CHUNK_CACHE_ENABLED;
+
         return data;
     }
 
@@ -140,14 +186,37 @@ public class CatalystConfigFile {
     private static class ConfigData {
         // Runtime optimizations
         boolean entityDistanceEnabled = false;
-        int entityViewMultiplier = 32;
+        int entityViewMultiplier = CatalystConfig.DEFAULT_BLOCKS_PER_CHUNK;
         boolean chunkRateEnabled = false;
-        int chunksPerTick = 4;
+        int chunksPerTick = CatalystConfig.DEFAULT_CHUNKS_PER_TICK;
 
         // Pathfinding
         boolean pathfindingEnabled = false;
-        int maxPathLength = 200;
-        int openNodesLimit = 80;
-        int totalNodesLimit = 400;
+        int maxPathLength = CatalystConfig.DEFAULT_MAX_PATH_LENGTH;
+        int openNodesLimit = CatalystConfig.DEFAULT_OPEN_NODES_LIMIT;
+        int totalNodesLimit = CatalystConfig.DEFAULT_TOTAL_NODES_LIMIT;
+
+        // Chunk generation
+        boolean chunkPoolSizeEnabled = false;
+        int chunkPoolSize = Runtime.getRuntime().availableProcessors();
+        boolean chunkCacheSizeEnabled = false;
+        int generatorCacheSize = CatalystConfig.DEFAULT_GENERATOR_CACHE_SIZE;
+        int caveCacheSize = CatalystConfig.DEFAULT_CAVE_CACHE_SIZE;
+        int prefabCacheSize = CatalystConfig.DEFAULT_PREFAB_CACHE_SIZE;
+        boolean chunkThreadPriorityEnabled = false;
+        int chunkThreadPriority = Thread.NORM_PRIORITY;
+
+        // Lighting
+        boolean lightSkipEmptyEnabled = false;
+
+        // Visual effects
+        boolean particlesEnabled = true;
+        boolean animationsEnabled = true;
+
+        // Caching optimizations
+        boolean blockSectionCacheEnabled = false;
+        boolean blockTypeCacheEnabled = false;
+        int blockTypeCacheSize = 256;
+        boolean localChunkCacheEnabled = false;
     }
 }

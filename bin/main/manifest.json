@@ -1,0 +1,26 @@
+{
+  "Group": "${group}",
+  "Name": "${name}",
+  "Version": "${version}",
+  "Description": "${description}",
+  "Authors": [
+    {
+      "Name": "CriticalRange",
+      "Email": "author@example.com",
+      "Url": "${website}"
+    }
+  ],
+  "Website": "${website}",
+  "ServerVersion": "${server_version}",
+  "Dependencies": {},
+  "OptionalDependencies": {},
+  "DisabledByDefault": false,
+  "Main": "${entry_point}",
+  "IncludesAssetPack": true,
+  "Icon": "icon.png",
+  "Hyxin": {
+    "Configs": [
+      "catalyst.mixins.json"
+    ]
+  }
+}

@@ -4,6 +4,8 @@ import com.hypixel.hytale.plugin.early.ClassTransformer;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.ClassVisitor;
+import org.objectweb.asm.FieldVisitor;
+import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 
 /**
@@ -151,5 +153,111 @@ public abstract class BaseTransformer implements ClassTransformer {
      */
     public boolean isEnabled() {
         return enabled;
+    }
+
+    // ========== Shared Utility Methods ==========
+
+    /**
+     * Adds a public static volatile field to a class.
+     * 
+     * @param cv The ClassVisitor to add the field to
+     * @param name The field name
+     * @param descriptor The field descriptor (e.g., "Z" for boolean, "I" for int)
+     */
+    protected static void addVolatileStaticField(ClassVisitor cv, String name, String descriptor) {
+        FieldVisitor fv = cv.visitField(
+            Opcodes.ACC_PUBLIC | Opcodes.ACC_STATIC | Opcodes.ACC_VOLATILE,
+            name, descriptor, null, null);
+        if (fv != null) fv.visitEnd();
+    }
+
+    /**
+     * Adds a public static field (non-volatile) to a class.
+     * 
+     * @param cv The ClassVisitor to add the field to
+     * @param name The field name
+     * @param descriptor The field descriptor
+     */
+    protected static void addStaticField(ClassVisitor cv, String name, String descriptor) {
+        FieldVisitor fv = cv.visitField(
+            Opcodes.ACC_PUBLIC | Opcodes.ACC_STATIC,
+            name, descriptor, null, null);
+        if (fv != null) fv.visitEnd();
+    }
+
+    /**
+     * Adds a private instance field to a class.
+     * 
+     * @param cv The ClassVisitor to add the field to
+     * @param name The field name
+     * @param descriptor The field descriptor
+     */
+    protected static void addPrivateField(ClassVisitor cv, String name, String descriptor) {
+        FieldVisitor fv = cv.visitField(
+            Opcodes.ACC_PRIVATE,
+            name, descriptor, null, null);
+        if (fv != null) fv.visitEnd();
+    }
+
+    /**
+     * Emits bytecode to initialize a static boolean field to false.
+     * 
+     * @param mv The MethodVisitor to emit to
+     * @param owner The internal class name
+     * @param fieldName The field name
+     */
+    protected static void initStaticBooleanFalse(MethodVisitor mv, String owner, String fieldName) {
+        mv.visitInsn(Opcodes.ICONST_0);
+        mv.visitFieldInsn(Opcodes.PUTSTATIC, owner, fieldName, "Z");
+    }
+
+    /**
+     * Emits bytecode to initialize a static boolean field to true.
+     * 
+     * @param mv The MethodVisitor to emit to
+     * @param owner The internal class name
+     * @param fieldName The field name
+     */
+    protected static void initStaticBooleanTrue(MethodVisitor mv, String owner, String fieldName) {
+        mv.visitInsn(Opcodes.ICONST_1);
+        mv.visitFieldInsn(Opcodes.PUTSTATIC, owner, fieldName, "Z");
+    }
+
+    /**
+     * Emits bytecode to initialize a static int field.
+     * 
+     * @param mv The MethodVisitor to emit to
+     * @param owner The internal class name
+     * @param fieldName The field name
+     * @param value The initial value
+     */
+    protected static void initStaticInt(MethodVisitor mv, String owner, String fieldName, int value) {
+        if (value == -1) {
+            mv.visitInsn(Opcodes.ICONST_M1);
+        } else if (value >= 0 && value <= 5) {
+            mv.visitInsn(Opcodes.ICONST_0 + value);
+        } else if (value >= Byte.MIN_VALUE && value <= Byte.MAX_VALUE) {
+            mv.visitIntInsn(Opcodes.BIPUSH, value);
+        } else if (value >= Short.MIN_VALUE && value <= Short.MAX_VALUE) {
+            mv.visitIntInsn(Opcodes.SIPUSH, value);
+        } else {
+            mv.visitLdcInsn(value);
+        }
+        mv.visitFieldInsn(Opcodes.PUTSTATIC, owner, fieldName, "I");
+    }
+
+    /**
+     * Creates a simple static initializer that calls the provided initializer.
+     * 
+     * @param cv The ClassVisitor
+     * @param initializer A Runnable that emits the initialization bytecode
+     */
+    protected static void createStaticInitializer(ClassVisitor cv, java.util.function.Consumer<MethodVisitor> initializer) {
+        MethodVisitor mv = cv.visitMethod(Opcodes.ACC_STATIC, "<clinit>", "()V", null, null);
+        mv.visitCode();
+        initializer.accept(mv);
+        mv.visitInsn(Opcodes.RETURN);
+        mv.visitMaxs(2, 0);
+        mv.visitEnd();
     }
 }
