@@ -130,6 +130,18 @@ public class CatalystConfigFile {
         CatalystConfig.BLOCK_TYPE_CACHE_ENABLED = data.blockTypeCacheEnabled;
         CatalystConfig.BLOCK_TYPE_CACHE_SIZE = clamp(data.blockTypeCacheSize, 64, 1024);
         CatalystConfig.LOCAL_CHUNK_CACHE_ENABLED = data.localChunkCacheEnabled;
+
+        // Advanced optimizations
+        CatalystConfig.BLOCK_ENTITY_SLEEP_ENABLED = data.blockEntitySleepEnabled;
+        CatalystConfig.BLOCK_ENTITY_SLEEP_INTERVAL = clamp(data.blockEntitySleepInterval, 1, 100);
+        CatalystConfig.STAT_RECALC_THROTTLE_ENABLED = data.statRecalcThrottleEnabled;
+        CatalystConfig.STAT_RECALC_INTERVAL = clamp(data.statRecalcInterval, 1, 40);
+        CatalystConfig.BLOCK_UPDATE_BATCHING_ENABLED = data.blockUpdateBatchingEnabled;
+        CatalystConfig.BLOCK_UPDATE_BATCH_SIZE = clamp(data.blockUpdateBatchSize, 16, 256);
+        CatalystConfig.FLOOD_FILL_LIMIT_ENABLED = data.floodFillLimitEnabled;
+        CatalystConfig.FLOOD_FILL_MAX_ITERATIONS = clamp(data.floodFillMaxIterations, 1000, 20000);
+        CatalystConfig.PATHFINDING_POOL_ENABLED = data.pathfindingPoolEnabled;
+        CatalystConfig.PATHFINDING_POOL_SIZE = clamp(data.pathfindingPoolSize, 128, 2048);
     }
 
     /**
@@ -172,6 +184,18 @@ public class CatalystConfigFile {
         data.blockTypeCacheEnabled = CatalystConfig.BLOCK_TYPE_CACHE_ENABLED;
         data.blockTypeCacheSize = CatalystConfig.BLOCK_TYPE_CACHE_SIZE;
         data.localChunkCacheEnabled = CatalystConfig.LOCAL_CHUNK_CACHE_ENABLED;
+
+        // Advanced optimizations
+        data.blockEntitySleepEnabled = CatalystConfig.BLOCK_ENTITY_SLEEP_ENABLED;
+        data.blockEntitySleepInterval = CatalystConfig.BLOCK_ENTITY_SLEEP_INTERVAL;
+        data.statRecalcThrottleEnabled = CatalystConfig.STAT_RECALC_THROTTLE_ENABLED;
+        data.statRecalcInterval = CatalystConfig.STAT_RECALC_INTERVAL;
+        data.blockUpdateBatchingEnabled = CatalystConfig.BLOCK_UPDATE_BATCHING_ENABLED;
+        data.blockUpdateBatchSize = CatalystConfig.BLOCK_UPDATE_BATCH_SIZE;
+        data.floodFillLimitEnabled = CatalystConfig.FLOOD_FILL_LIMIT_ENABLED;
+        data.floodFillMaxIterations = CatalystConfig.FLOOD_FILL_MAX_ITERATIONS;
+        data.pathfindingPoolEnabled = CatalystConfig.PATHFINDING_POOL_ENABLED;
+        data.pathfindingPoolSize = CatalystConfig.PATHFINDING_POOL_SIZE;
 
         return data;
     }
@@ -218,5 +242,17 @@ public class CatalystConfigFile {
         boolean blockTypeCacheEnabled = false;
         int blockTypeCacheSize = 256;
         boolean localChunkCacheEnabled = false;
+
+        // Advanced optimizations
+        boolean blockEntitySleepEnabled = false;
+        int blockEntitySleepInterval = 20;
+        boolean statRecalcThrottleEnabled = false;
+        int statRecalcInterval = 5;
+        boolean blockUpdateBatchingEnabled = false;
+        int blockUpdateBatchSize = 64;
+        boolean floodFillLimitEnabled = false;
+        int floodFillMaxIterations = 5000;
+        boolean pathfindingPoolEnabled = false;
+        int pathfindingPoolSize = 512;
     }
 }

@@ -1,0 +1,19 @@
+$C = "../Common.ui";
+
+// Simple row with better checkbox style
+Group {
+  Anchor: (Height: 44, Bottom: 4);
+  Background: #1a1d26;
+  LayoutMode: Left;
+  Padding: (Left: 16, Right: 16);
+
+  Label #SearchResultLabel {
+    Style: (VerticalAlignment: Center, TextColor: #96a9be, FontSize: 15);
+    Text: "Setting Name";
+    FlexWeight: 1;
+  }
+
+  $C.@CheckBox #SearchResultCheckBox {
+    Value: false;
+  }
+}

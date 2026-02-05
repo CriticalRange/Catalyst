@@ -180,6 +180,28 @@ public class Catalyst extends JavaPlugin {
             "$catalystBlockTypeCacheSize", CatalystConfig.BLOCK_TYPE_CACHE_SIZE);
         setStaticField("com.hypixel.hytale.server.core.universe.world.accessor.LocalCachedChunkAccessor",
             "$catalystLocalChunkCacheEnabled", CatalystConfig.LOCAL_CHUNK_CACHE_ENABLED);
+
+        // Advanced optimization fields
+        setStaticField("com.hypixel.hytale.server.core.universe.world.chunk.section.BlockSection",
+            "$catalystBlockEntitySleepEnabled", CatalystConfig.BLOCK_ENTITY_SLEEP_ENABLED);
+        setStaticField("com.hypixel.hytale.server.core.universe.world.chunk.section.BlockSection",
+            "$catalystBlockEntitySleepInterval", CatalystConfig.BLOCK_ENTITY_SLEEP_INTERVAL);
+        setStaticField("com.hypixel.hytale.server.core.entity.StatModifiersManager",
+            "$catalystStatRecalcThrottleEnabled", CatalystConfig.STAT_RECALC_THROTTLE_ENABLED);
+        setStaticField("com.hypixel.hytale.server.core.entity.StatModifiersManager",
+            "$catalystStatRecalcInterval", CatalystConfig.STAT_RECALC_INTERVAL);
+        setStaticField("com.hypixel.hytale.server.core.universe.world.WorldNotificationHandler",
+            "$catalystBlockUpdateBatchingEnabled", CatalystConfig.BLOCK_UPDATE_BATCHING_ENABLED);
+        setStaticField("com.hypixel.hytale.server.core.universe.world.WorldNotificationHandler",
+            "$catalystBlockUpdateBatchSize", CatalystConfig.BLOCK_UPDATE_BATCH_SIZE);
+        setStaticField("com.hypixel.hytale.server.spawning.util.FloodFillPositionSelector",
+            "$catalystFloodFillLimitEnabled", CatalystConfig.FLOOD_FILL_LIMIT_ENABLED);
+        setStaticField("com.hypixel.hytale.server.spawning.util.FloodFillPositionSelector",
+            "$catalystFloodFillMaxIterations", CatalystConfig.FLOOD_FILL_MAX_ITERATIONS);
+        setStaticField("com.hypixel.hytale.server.npc.navigation.AStarBase",
+            "$catalystPathfindingPoolEnabled", CatalystConfig.PATHFINDING_POOL_ENABLED);
+        setStaticField("com.hypixel.hytale.server.npc.navigation.AStarBase",
+            "$catalystPathfindingPoolSize", CatalystConfig.PATHFINDING_POOL_SIZE);
     }
 
     private void setStaticField(String className, String fieldName, boolean value) {

@@ -1,0 +1,22 @@
+$C = "../Common.ui";
+
+Group {
+  Anchor: (Height: 44, Bottom: 4);
+  Background: #1a1d26;
+  LayoutMode: Left;
+  Padding: (Left: 16, Right: 16);
+
+  Label #SearchResultLabel {
+    Style: (VerticalAlignment: Center, TextColor: #96a9be, FontSize: 15);
+    Text: "Setting Name";
+    FlexWeight: 1;
+  }
+
+  SliderNumberField #SearchResultSlider {
+    Anchor: (Width: 250, Height: 5);
+    SliderStyle: $C.@DefaultSliderStyle;
+    NumberFieldStyle: $C.@DefaultInputFieldStyle;
+    Min: 0;
+    Max: 100;
+  }
+}

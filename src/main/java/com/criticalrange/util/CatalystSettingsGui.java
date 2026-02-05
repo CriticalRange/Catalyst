@@ -105,6 +105,46 @@ public class CatalystSettingsGui extends InteractiveCustomUIPage<CatalystSetting
             EventData.of("SwitchTabPathfinding", "CAT"), false);
         uiEventBuilder.addEventBinding(CustomUIEventBindingType.Activating, "#TabVisual",
             EventData.of("SwitchTabVisual", "CAT"), false);
+        uiEventBuilder.addEventBinding(CustomUIEventBindingType.Activating, "#TabAdvanced",
+            EventData.of("SwitchTabAdvanced", "CAT"), false);
+
+        // Set values for advanced optimizations
+        uiCommandBuilder.set("#BlockEntitySleepCheckBox.Value", com.criticalrange.CatalystConfig.BLOCK_ENTITY_SLEEP_ENABLED);
+        uiCommandBuilder.set("#BlockEntitySleepIntervalSlider.Value", com.criticalrange.CatalystConfig.BLOCK_ENTITY_SLEEP_INTERVAL);
+        uiCommandBuilder.set("#StatRecalcThrottleCheckBox.Value", com.criticalrange.CatalystConfig.STAT_RECALC_THROTTLE_ENABLED);
+        uiCommandBuilder.set("#StatRecalcIntervalSlider.Value", com.criticalrange.CatalystConfig.STAT_RECALC_INTERVAL);
+        uiCommandBuilder.set("#BlockUpdateBatchingCheckBox.Value", com.criticalrange.CatalystConfig.BLOCK_UPDATE_BATCHING_ENABLED);
+        uiCommandBuilder.set("#BlockUpdateBatchSizeSlider.Value", com.criticalrange.CatalystConfig.BLOCK_UPDATE_BATCH_SIZE);
+        uiCommandBuilder.set("#FloodFillLimitCheckBox.Value", com.criticalrange.CatalystConfig.FLOOD_FILL_LIMIT_ENABLED);
+        uiCommandBuilder.set("#FloodFillMaxIterationsSlider.Value", com.criticalrange.CatalystConfig.FLOOD_FILL_MAX_ITERATIONS);
+        uiCommandBuilder.set("#PathfindingPoolCheckBox.Value", com.criticalrange.CatalystConfig.PATHFINDING_POOL_ENABLED);
+        uiCommandBuilder.set("#PathfindingPoolSizeSlider.Value", com.criticalrange.CatalystConfig.PATHFINDING_POOL_SIZE);
+
+        // Add event bindings for search (CompactTextField uses ValueChanged with .Value)
+        uiEventBuilder.addEventBinding(CustomUIEventBindingType.ValueChanged, "#SearchInput",
+            EventData.of("@SearchQuery", "#SearchInput.Value"), false);
+
+        // Add event bindings for advanced optimizations
+        uiEventBuilder.addEventBinding(CustomUIEventBindingType.ValueChanged, "#BlockEntitySleepCheckBox",
+            EventData.of("ToggleBlockEntitySleep", "CAT"), false);
+        uiEventBuilder.addEventBinding(CustomUIEventBindingType.ValueChanged, "#BlockEntitySleepIntervalSlider",
+            EventData.of("@SetBlockEntitySleepInterval", "#BlockEntitySleepIntervalSlider.Value"), false);
+        uiEventBuilder.addEventBinding(CustomUIEventBindingType.ValueChanged, "#StatRecalcThrottleCheckBox",
+            EventData.of("ToggleStatRecalcThrottle", "CAT"), false);
+        uiEventBuilder.addEventBinding(CustomUIEventBindingType.ValueChanged, "#StatRecalcIntervalSlider",
+            EventData.of("@SetStatRecalcInterval", "#StatRecalcIntervalSlider.Value"), false);
+        uiEventBuilder.addEventBinding(CustomUIEventBindingType.ValueChanged, "#BlockUpdateBatchingCheckBox",
+            EventData.of("ToggleBlockUpdateBatching", "CAT"), false);
+        uiEventBuilder.addEventBinding(CustomUIEventBindingType.ValueChanged, "#BlockUpdateBatchSizeSlider",
+            EventData.of("@SetBlockUpdateBatchSize", "#BlockUpdateBatchSizeSlider.Value"), false);
+        uiEventBuilder.addEventBinding(CustomUIEventBindingType.ValueChanged, "#FloodFillLimitCheckBox",
+            EventData.of("ToggleFloodFillLimit", "CAT"), false);
+        uiEventBuilder.addEventBinding(CustomUIEventBindingType.ValueChanged, "#FloodFillMaxIterationsSlider",
+            EventData.of("@SetFloodFillMaxIterations", "#FloodFillMaxIterationsSlider.Value"), false);
+        uiEventBuilder.addEventBinding(CustomUIEventBindingType.ValueChanged, "#PathfindingPoolCheckBox",
+            EventData.of("TogglePathfindingPool", "CAT"), false);
+        uiEventBuilder.addEventBinding(CustomUIEventBindingType.ValueChanged, "#PathfindingPoolSizeSlider",
+            EventData.of("@SetPathfindingPoolSize", "#PathfindingPoolSizeSlider.Value"), false);
     }
 
     @Override
@@ -234,21 +274,122 @@ public class CatalystSettingsGui extends InteractiveCustomUIPage<CatalystSetting
             needUpdate = true;
         }
 
-        // Tab switching
+        // Search handling
+        if (data.searchQuery != null) {
+            handleSearch(commandBuilder, eventBuilder, data.searchQuery);
+            needUpdate = true;
+        }
+
+        // Tab switching - also clear search
         if (data.switchTabGeneral != null) {
+            clearSearch(commandBuilder);
             switchToTab(commandBuilder, "General");
             needUpdate = true;
         }
         if (data.switchTabLighting != null) {
+            clearSearch(commandBuilder);
             switchToTab(commandBuilder, "Lighting");
             needUpdate = true;
         }
         if (data.switchTabPathfinding != null) {
+            clearSearch(commandBuilder);
             switchToTab(commandBuilder, "Pathfinding");
             needUpdate = true;
         }
         if (data.switchTabVisual != null) {
+            clearSearch(commandBuilder);
             switchToTab(commandBuilder, "Visual");
+            needUpdate = true;
+        }
+        if (data.switchTabAdvanced != null) {
+            clearSearch(commandBuilder);
+            switchToTab(commandBuilder, "Advanced");
+            needUpdate = true;
+        }
+
+        // Advanced optimization toggles
+        if (data.toggleBlockEntitySleep != null) {
+            boolean newState = toggleBlockEntitySleep();
+            commandBuilder.set("#BlockEntitySleepCheckBox.Value", newState);
+            player.sendMessage(com.hypixel.hytale.server.core.Message.raw(
+                "Skip Idle Block Entities: " + (newState ? "ENABLED" : "DISABLED")));
+            needUpdate = true;
+        }
+
+        if (data.blockEntitySleepIntervalValue != null) {
+            int newValue = Math.max(1, Math.min(100, data.blockEntitySleepIntervalValue));
+            setBlockEntitySleepInterval(newValue);
+            commandBuilder.set("#BlockEntitySleepIntervalSlider.Value", newValue);
+            player.sendMessage(com.hypixel.hytale.server.core.Message.raw(
+                "Block Entity Sleep Interval: " + newValue + " ticks"));
+            needUpdate = true;
+        }
+
+        if (data.toggleStatRecalcThrottle != null) {
+            boolean newState = toggleStatRecalcThrottle();
+            commandBuilder.set("#StatRecalcThrottleCheckBox.Value", newState);
+            player.sendMessage(com.hypixel.hytale.server.core.Message.raw(
+                "Skip Stat Modifiers Recalc: " + (newState ? "ENABLED" : "DISABLED")));
+            needUpdate = true;
+        }
+
+        if (data.statRecalcIntervalValue != null) {
+            int newValue = Math.max(1, Math.min(40, data.statRecalcIntervalValue));
+            setStatRecalcInterval(newValue);
+            commandBuilder.set("#StatRecalcIntervalSlider.Value", newValue);
+            player.sendMessage(com.hypixel.hytale.server.core.Message.raw(
+                "Stat Recalc Interval: " + newValue + " ticks"));
+            needUpdate = true;
+        }
+
+        if (data.toggleBlockUpdateBatching != null) {
+            boolean newState = toggleBlockUpdateBatching();
+            commandBuilder.set("#BlockUpdateBatchingCheckBox.Value", newState);
+            player.sendMessage(com.hypixel.hytale.server.core.Message.raw(
+                "Block Update Batching: " + (newState ? "ENABLED" : "DISABLED")));
+            needUpdate = true;
+        }
+
+        if (data.blockUpdateBatchSizeValue != null) {
+            int newValue = Math.max(16, Math.min(256, data.blockUpdateBatchSizeValue));
+            setBlockUpdateBatchSize(newValue);
+            commandBuilder.set("#BlockUpdateBatchSizeSlider.Value", newValue);
+            player.sendMessage(com.hypixel.hytale.server.core.Message.raw(
+                "Block Update Batch Size: " + newValue));
+            needUpdate = true;
+        }
+
+        if (data.toggleFloodFillLimit != null) {
+            boolean newState = toggleFloodFillLimit();
+            commandBuilder.set("#FloodFillLimitCheckBox.Value", newState);
+            player.sendMessage(com.hypixel.hytale.server.core.Message.raw(
+                "Flood Fill Depth Limit: " + (newState ? "ENABLED" : "DISABLED")));
+            needUpdate = true;
+        }
+
+        if (data.floodFillMaxIterationsValue != null) {
+            int newValue = Math.max(1000, Math.min(20000, data.floodFillMaxIterationsValue));
+            setFloodFillMaxIterations(newValue);
+            commandBuilder.set("#FloodFillMaxIterationsSlider.Value", newValue);
+            player.sendMessage(com.hypixel.hytale.server.core.Message.raw(
+                "Flood Fill Max Iterations: " + newValue));
+            needUpdate = true;
+        }
+
+        if (data.togglePathfindingPool != null) {
+            boolean newState = togglePathfindingPool();
+            commandBuilder.set("#PathfindingPoolCheckBox.Value", newState);
+            player.sendMessage(com.hypixel.hytale.server.core.Message.raw(
+                "Pathfinding Memory Pool: " + (newState ? "ENABLED" : "DISABLED")));
+            needUpdate = true;
+        }
+
+        if (data.pathfindingPoolSizeValue != null) {
+            int newValue = Math.max(128, Math.min(2048, data.pathfindingPoolSizeValue));
+            setPathfindingPoolSize(newValue);
+            commandBuilder.set("#PathfindingPoolSizeSlider.Value", newValue);
+            player.sendMessage(com.hypixel.hytale.server.core.Message.raw(
+                "Pathfinding Pool Size: " + newValue));
             needUpdate = true;
         }
 
@@ -267,18 +408,21 @@ public class CatalystSettingsGui extends InteractiveCustomUIPage<CatalystSetting
         commandBuilder.set("#PanelLighting.Visible", false);
         commandBuilder.set("#PanelPathfinding.Visible", false);
         commandBuilder.set("#PanelVisual.Visible", false);
+        commandBuilder.set("#PanelAdvanced.Visible", false);
 
         // Reset all indicators
         commandBuilder.set("#IndicatorGeneral.Background", "#12151c");
         commandBuilder.set("#IndicatorLighting.Background", "#12151c");
         commandBuilder.set("#IndicatorPathfinding.Background", "#12151c");
         commandBuilder.set("#IndicatorVisual.Background", "#12151c");
+        commandBuilder.set("#IndicatorAdvanced.Background", "#12151c");
 
         // Reset all tab buttons to unselected style
         commandBuilder.set("#TabGeneral.Background", "#1a1d26");
         commandBuilder.set("#TabLighting.Background", "#1a1d26");
         commandBuilder.set("#TabPathfinding.Background", "#1a1d26");
         commandBuilder.set("#TabVisual.Background", "#1a1d26");
+        commandBuilder.set("#TabAdvanced.Background", "#1a1d26");
 
         // Show selected panel, indicator, and tab button
         switch (tabName) {
@@ -302,6 +446,182 @@ public class CatalystSettingsGui extends InteractiveCustomUIPage<CatalystSetting
                 commandBuilder.set("#IndicatorVisual.Background", "#55aaff");
                 commandBuilder.set("#TabVisual.Background", "#2d3444");
                 break;
+            case "Advanced":
+                commandBuilder.set("#PanelAdvanced.Visible", true);
+                commandBuilder.set("#IndicatorAdvanced.Background", "#55aaff");
+                commandBuilder.set("#TabAdvanced.Background", "#2d3444");
+                break;
+        }
+    }
+
+    // ===== Search Functionality =====
+
+    private static final SearchableSetting[] SEARCHABLE_SETTINGS = {
+        // General tab - sliders use existing element IDs, checkboxes use existing IDs
+        new SearchableSetting("Entity View Multiplier", "entity view distance range visibility", "General", 
+            "slider", "#EntityDistanceSlider", "@SetEntityDistance", 1, 64),
+        new SearchableSetting("Chunks Per Tick", "chunk loading rate speed generation", "General", 
+            "slider", "#ChunkRateSlider", "@SetChunkRate", 1, 16),
+        new SearchableSetting("Block Section Cache", "cache section memory optimization", "General", 
+            "checkbox", "#BlockSectionCacheCheckBox", "ToggleBlockSectionCache", 0, 0),
+        new SearchableSetting("Block Type Cache", "cache type lookup optimization", "General", 
+            "checkbox", "#BlockTypeCacheCheckBox", "ToggleBlockTypeCache", 0, 0),
+        new SearchableSetting("Local Chunk Cache", "cache chunk lighting optimization", "General", 
+            "checkbox", "#LocalChunkCacheCheckBox", "ToggleLocalChunkCache", 0, 0),
+        new SearchableSetting("Thread Priority", "chunk generation thread priority cpu", "General", 
+            "slider", "#ChunkThreadPrioritySlider", "@SetChunkThreadPriority", 1, 10),
+        // Lighting tab
+        new SearchableSetting("Skip Empty Sections", "light lighting empty air optimization", "Lighting", 
+            "checkbox", "#SkipEmptySectionsCheckBox", "ToggleSkipEmptySections", 0, 0),
+        // Pathfinding tab
+        new SearchableSetting("Max Path Length", "pathfinding npc path length limit", "Pathfinding", 
+            "slider", "#MaxPathLengthSlider", "@SetMaxPathLength", 50, 500),
+        new SearchableSetting("Open Nodes Limit", "pathfinding npc nodes memory", "Pathfinding", 
+            "slider", "#OpenNodesSlider", "@SetOpenNodes", 20, 200),
+        new SearchableSetting("Total Nodes Limit", "pathfinding npc total nodes limit", "Pathfinding", 
+            "slider", "#TotalNodesSlider", "@SetTotalNodes", 100, 1000),
+        // Visual tab
+        new SearchableSetting("Particle Effects", "particles visual effects toggle", "Visual", 
+            "checkbox", "#ParticlesCheckBox", "ToggleParticles", 0, 0),
+        new SearchableSetting("NPC Animations", "animations npc visual toggle", "Visual", 
+            "checkbox", "#AnimationsCheckBox", "ToggleAnimations", 0, 0),
+        // Advanced tab
+        new SearchableSetting("Skip Idle Block Entities", "block entity sleep idle tick optimization", "Advanced", 
+            "checkbox", "#BlockEntitySleepCheckBox", "ToggleBlockEntitySleep", 0, 0),
+        new SearchableSetting("Sleep Interval", "block entity sleep interval ticks", "Advanced", 
+            "slider", "#BlockEntitySleepIntervalSlider", "@SetBlockEntitySleepInterval", 1, 100),
+        new SearchableSetting("Throttle Stat Recalc", "stat modifiers recalculation throttle cpu", "Advanced", 
+            "checkbox", "#StatRecalcThrottleCheckBox", "ToggleStatRecalcThrottle", 0, 0),
+        new SearchableSetting("Recalc Interval", "stat recalculation interval ticks", "Advanced", 
+            "slider", "#StatRecalcIntervalSlider", "@SetStatRecalcInterval", 1, 40),
+        new SearchableSetting("Batch Notifications", "block update batching network traffic", "Advanced", 
+            "checkbox", "#BlockUpdateBatchingCheckBox", "ToggleBlockUpdateBatching", 0, 0),
+        new SearchableSetting("Batch Size", "block update batch size network", "Advanced", 
+            "slider", "#BlockUpdateBatchSizeSlider", "@SetBlockUpdateBatchSize", 16, 256),
+        new SearchableSetting("Limit Flood Fill", "flood fill spawn depth limit", "Advanced", 
+            "checkbox", "#FloodFillLimitCheckBox", "ToggleFloodFillLimit", 0, 0),
+        new SearchableSetting("Max Flood Fill Depth", "flood fill max iterations depth", "Advanced", 
+            "slider", "#FloodFillMaxIterationsSlider", "@SetFloodFillMaxIterations", 1000, 20000),
+        new SearchableSetting("Pathfinding Node Pool", "pathfinding pool memory garbage collection", "Advanced", 
+            "checkbox", "#PathfindingPoolCheckBox", "TogglePathfindingPool", 0, 0),
+        new SearchableSetting("Pool Size", "pathfinding pool size memory", "Advanced", 
+            "slider", "#PathfindingPoolSizeSlider", "@SetPathfindingPoolSize", 128, 2048),
+    };
+
+    private static class SearchableSetting {
+        final String name;
+        final String keywords;
+        final String tab;
+        final String controlType; // "slider" or "checkbox"
+        final String elementId;
+        final String eventKey;
+        final int min;
+        final int max;
+
+        SearchableSetting(String name, String keywords, String tab, String controlType, String elementId, String eventKey, int min, int max) {
+            this.name = name;
+            this.keywords = keywords.toLowerCase();
+            this.tab = tab;
+            this.controlType = controlType;
+            this.elementId = elementId;
+            this.eventKey = eventKey;
+            this.min = min;
+            this.max = max;
+        }
+
+        boolean matches(String query) {
+            String lowerQuery = query.toLowerCase();
+            return name.toLowerCase().contains(lowerQuery) || keywords.contains(lowerQuery);
+        }
+    }
+
+    private boolean getCheckboxValue(String eventKey) {
+        switch (eventKey) {
+            case "ToggleBlockSectionCache": return com.criticalrange.CatalystConfig.BLOCK_SECTION_CACHE_ENABLED;
+            case "ToggleBlockTypeCache": return com.criticalrange.CatalystConfig.BLOCK_TYPE_CACHE_ENABLED;
+            case "ToggleLocalChunkCache": return com.criticalrange.CatalystConfig.LOCAL_CHUNK_CACHE_ENABLED;
+            case "ToggleSkipEmptySections": return com.criticalrange.CatalystConfig.LIGHT_SKIP_EMPTY_ENABLED;
+            case "ToggleParticles": return com.criticalrange.CatalystConfig.PARTICLES_ENABLED;
+            case "ToggleAnimations": return com.criticalrange.CatalystConfig.ANIMATIONS_ENABLED;
+            case "ToggleBlockEntitySleep": return com.criticalrange.CatalystConfig.BLOCK_ENTITY_SLEEP_ENABLED;
+            case "ToggleStatRecalcThrottle": return com.criticalrange.CatalystConfig.STAT_RECALC_THROTTLE_ENABLED;
+            case "ToggleBlockUpdateBatching": return com.criticalrange.CatalystConfig.BLOCK_UPDATE_BATCHING_ENABLED;
+            case "ToggleFloodFillLimit": return com.criticalrange.CatalystConfig.FLOOD_FILL_LIMIT_ENABLED;
+            case "TogglePathfindingPool": return com.criticalrange.CatalystConfig.PATHFINDING_POOL_ENABLED;
+            default: return false;
+        }
+    }
+
+    private void clearSearch(UICommandBuilder commandBuilder) {
+        // Hide search panel and show tabs
+        commandBuilder.set("#PanelSearch.Visible", false);
+        commandBuilder.set("#PanelsContainer.Visible", true);
+        // Clear search input
+        commandBuilder.set("#SearchInput.Value", "");
+        // Clear search results
+        commandBuilder.clear("#SearchResultsList");
+    }
+
+    private void handleSearch(UICommandBuilder commandBuilder, UIEventBuilder eventBuilder, String query) {
+        if (query == null || query.trim().isEmpty()) {
+            // Hide search panel and show tabs when search is cleared
+            commandBuilder.set("#PanelSearch.Visible", false);
+            commandBuilder.set("#PanelsContainer.Visible", true);
+            return;
+        }
+
+        // Hide tabs and show search panel
+        commandBuilder.set("#PanelsContainer.Visible", false);
+        commandBuilder.set("#PanelSearch.Visible", true);
+
+        // Clear previous search results
+        commandBuilder.clear("#SearchResultsList");
+
+        // Find matching settings
+        java.util.List<SearchableSetting> matches = new java.util.ArrayList<>();
+        for (SearchableSetting setting : SEARCHABLE_SETTINGS) {
+            if (setting.matches(query)) {
+                matches.add(setting);
+            }
+        }
+
+        if (matches.isEmpty()) {
+            commandBuilder.set("#NoResultsLabel.Visible", true);
+            commandBuilder.set("#SearchResultsLabel.Text", "No Results");
+            commandBuilder.set("#SearchResultsList.Visible", false);
+        } else {
+            commandBuilder.set("#NoResultsLabel.Visible", false);
+            commandBuilder.set("#SearchResultsList.Visible", true);
+            commandBuilder.set("#SearchResultsLabel.Text", "Found " + matches.size() + " setting" + (matches.size() > 1 ? "s" : ""));
+            
+            // Append UI templates and configure each one using indexed selectors
+            for (int i = 0; i < matches.size(); i++) {
+                SearchableSetting match = matches.get(i);
+                
+                if ("checkbox".equals(match.controlType)) {
+                    // Append checkbox template
+                    commandBuilder.append("#SearchResultsList", "Components/SearchResultCheckbox.ui");
+                    // Configure using indexed selector
+                    commandBuilder.set("#SearchResultsList[" + i + "] #SearchResultLabel.Text", match.name);
+                    // Set current checkbox value
+                    commandBuilder.set("#SearchResultsList[" + i + "] #SearchResultCheckBox.Value", getCheckboxValue(match.eventKey));
+                    // Add event binding for checkbox ValueChanged
+                    eventBuilder.addEventBinding(CustomUIEventBindingType.ValueChanged, 
+                        "#SearchResultsList[" + i + "] #SearchResultCheckBox",
+                        EventData.of(match.eventKey, "CAT"), false);
+                } else {
+                    // Append slider template
+                    commandBuilder.append("#SearchResultsList", "Components/SearchResultSlider.ui");
+                    // Configure using indexed selector
+                    commandBuilder.set("#SearchResultsList[" + i + "] #SearchResultLabel.Text", match.name);
+                    commandBuilder.set("#SearchResultsList[" + i + "] #SearchResultSlider.Min", match.min);
+                    commandBuilder.set("#SearchResultsList[" + i + "] #SearchResultSlider.Max", match.max);
+                    // Add event binding for this slider
+                    eventBuilder.addEventBinding(CustomUIEventBindingType.ValueChanged,
+                        "#SearchResultsList[" + i + "] #SearchResultSlider",
+                        EventData.of(match.eventKey, "#SearchResultsList[" + i + "] #SearchResultSlider.Value"), false);
+                }
+            }
         }
     }
 
@@ -522,6 +842,98 @@ public class CatalystSettingsGui extends InteractiveCustomUIPage<CatalystSetting
         return newState;
     }
 
+    // ===== Advanced Optimization Toggles =====
+
+    private boolean toggleBlockEntitySleep() {
+        boolean newState = !com.criticalrange.CatalystConfig.BLOCK_ENTITY_SLEEP_ENABLED;
+        com.criticalrange.CatalystConfig.BLOCK_ENTITY_SLEEP_ENABLED = newState;
+        try {
+            Class<?> clazz = Class.forName("com.hypixel.hytale.server.core.universe.world.chunk.section.BlockSection");
+            clazz.getField("$catalystBlockEntitySleepEnabled").setBoolean(null, newState);
+        } catch (Exception e) { /* ignore */ }
+        return newState;
+    }
+
+    private void setBlockEntitySleepInterval(int value) {
+        com.criticalrange.CatalystConfig.BLOCK_ENTITY_SLEEP_INTERVAL = value;
+        try {
+            Class<?> clazz = Class.forName("com.hypixel.hytale.server.core.universe.world.chunk.section.BlockSection");
+            clazz.getField("$catalystBlockEntitySleepInterval").setInt(null, value);
+        } catch (Exception e) { /* ignore */ }
+    }
+
+    private boolean toggleStatRecalcThrottle() {
+        boolean newState = !com.criticalrange.CatalystConfig.STAT_RECALC_THROTTLE_ENABLED;
+        com.criticalrange.CatalystConfig.STAT_RECALC_THROTTLE_ENABLED = newState;
+        try {
+            Class<?> clazz = Class.forName("com.hypixel.hytale.server.core.entity.StatModifiersManager");
+            clazz.getField("$catalystStatRecalcThrottleEnabled").setBoolean(null, newState);
+        } catch (Exception e) { /* ignore */ }
+        return newState;
+    }
+
+    private void setStatRecalcInterval(int value) {
+        com.criticalrange.CatalystConfig.STAT_RECALC_INTERVAL = value;
+        try {
+            Class<?> clazz = Class.forName("com.hypixel.hytale.server.core.entity.StatModifiersManager");
+            clazz.getField("$catalystStatRecalcInterval").setInt(null, value);
+        } catch (Exception e) { /* ignore */ }
+    }
+
+    private boolean toggleBlockUpdateBatching() {
+        boolean newState = !com.criticalrange.CatalystConfig.BLOCK_UPDATE_BATCHING_ENABLED;
+        com.criticalrange.CatalystConfig.BLOCK_UPDATE_BATCHING_ENABLED = newState;
+        try {
+            Class<?> clazz = Class.forName("com.hypixel.hytale.server.core.universe.world.WorldNotificationHandler");
+            clazz.getField("$catalystBlockUpdateBatchingEnabled").setBoolean(null, newState);
+        } catch (Exception e) { /* ignore */ }
+        return newState;
+    }
+
+    private void setBlockUpdateBatchSize(int value) {
+        com.criticalrange.CatalystConfig.BLOCK_UPDATE_BATCH_SIZE = value;
+        try {
+            Class<?> clazz = Class.forName("com.hypixel.hytale.server.core.universe.world.WorldNotificationHandler");
+            clazz.getField("$catalystBlockUpdateBatchSize").setInt(null, value);
+        } catch (Exception e) { /* ignore */ }
+    }
+
+    private boolean toggleFloodFillLimit() {
+        boolean newState = !com.criticalrange.CatalystConfig.FLOOD_FILL_LIMIT_ENABLED;
+        com.criticalrange.CatalystConfig.FLOOD_FILL_LIMIT_ENABLED = newState;
+        try {
+            Class<?> clazz = Class.forName("com.hypixel.hytale.server.spawning.util.FloodFillPositionSelector");
+            clazz.getField("$catalystFloodFillLimitEnabled").setBoolean(null, newState);
+        } catch (Exception e) { /* ignore */ }
+        return newState;
+    }
+
+    private void setFloodFillMaxIterations(int value) {
+        com.criticalrange.CatalystConfig.FLOOD_FILL_MAX_ITERATIONS = value;
+        try {
+            Class<?> clazz = Class.forName("com.hypixel.hytale.server.spawning.util.FloodFillPositionSelector");
+            clazz.getField("$catalystFloodFillMaxIterations").setInt(null, value);
+        } catch (Exception e) { /* ignore */ }
+    }
+
+    private boolean togglePathfindingPool() {
+        boolean newState = !com.criticalrange.CatalystConfig.PATHFINDING_POOL_ENABLED;
+        com.criticalrange.CatalystConfig.PATHFINDING_POOL_ENABLED = newState;
+        try {
+            Class<?> clazz = Class.forName("com.hypixel.hytale.server.npc.navigation.AStarBase");
+            clazz.getField("$catalystPathfindingPoolEnabled").setBoolean(null, newState);
+        } catch (Exception e) { /* ignore */ }
+        return newState;
+    }
+
+    private void setPathfindingPoolSize(int value) {
+        com.criticalrange.CatalystConfig.PATHFINDING_POOL_SIZE = value;
+        try {
+            Class<?> clazz = Class.forName("com.hypixel.hytale.server.npc.navigation.AStarBase");
+            clazz.getField("$catalystPathfindingPoolSize").setInt(null, value);
+        } catch (Exception e) { /* ignore */ }
+    }
+
     // ===== Reset to Defaults =====
 
     /**
@@ -572,7 +984,7 @@ public class CatalystSettingsGui extends InteractiveCustomUIPage<CatalystSetting
         com.criticalrange.CatalystConfig.CHUNK_POOL_SIZE_ENABLED = false;
         com.criticalrange.CatalystConfig.CHUNK_CACHE_SIZE_ENABLED = false;
         com.criticalrange.CatalystConfig.CHUNK_THREAD_PRIORITY_ENABLED = false;
-        com.criticalrange.CatalystConfig.CHUNK_THREAD_PRIORITY = 5;
+        com.criticalrange.CatalystConfig.CHUNK_THREAD_PRIORITY = Thread.NORM_PRIORITY;
 
         // Visual effects defaults (enabled by default)
         VisualEffectsToggle.particlesEnabled = true;
@@ -611,6 +1023,57 @@ public class CatalystSettingsGui extends InteractiveCustomUIPage<CatalystSetting
         commandBuilder.set("#BlockSectionCacheCheckBox.Value", false);
         commandBuilder.set("#BlockTypeCacheCheckBox.Value", false);
         commandBuilder.set("#LocalChunkCacheCheckBox.Value", false);
+
+        // Advanced optimization defaults
+        com.criticalrange.CatalystConfig.BLOCK_ENTITY_SLEEP_ENABLED = false;
+        com.criticalrange.CatalystConfig.BLOCK_ENTITY_SLEEP_INTERVAL = 20;
+        com.criticalrange.CatalystConfig.STAT_RECALC_THROTTLE_ENABLED = false;
+        com.criticalrange.CatalystConfig.STAT_RECALC_INTERVAL = 5;
+        com.criticalrange.CatalystConfig.BLOCK_UPDATE_BATCHING_ENABLED = false;
+        com.criticalrange.CatalystConfig.BLOCK_UPDATE_BATCH_SIZE = 64;
+        com.criticalrange.CatalystConfig.FLOOD_FILL_LIMIT_ENABLED = false;
+        com.criticalrange.CatalystConfig.FLOOD_FILL_MAX_ITERATIONS = 5000;
+        com.criticalrange.CatalystConfig.PATHFINDING_POOL_ENABLED = false;
+        com.criticalrange.CatalystConfig.PATHFINDING_POOL_SIZE = 512;
+
+        // Sync advanced optimizations to injected fields
+        try {
+            Class<?> blockSectionClass = Class.forName("com.hypixel.hytale.server.core.universe.world.chunk.section.BlockSection");
+            blockSectionClass.getField("$catalystBlockEntitySleepEnabled").setBoolean(null, false);
+            blockSectionClass.getField("$catalystBlockEntitySleepInterval").setInt(null, 20);
+        } catch (Exception e) { /* ignore */ }
+        try {
+            Class<?> statModifiersClass = Class.forName("com.hypixel.hytale.server.core.entity.StatModifiersManager");
+            statModifiersClass.getField("$catalystStatRecalcThrottleEnabled").setBoolean(null, false);
+            statModifiersClass.getField("$catalystStatRecalcInterval").setInt(null, 5);
+        } catch (Exception e) { /* ignore */ }
+        try {
+            Class<?> notificationClass = Class.forName("com.hypixel.hytale.server.core.universe.world.WorldNotificationHandler");
+            notificationClass.getField("$catalystBlockUpdateBatchingEnabled").setBoolean(null, false);
+            notificationClass.getField("$catalystBlockUpdateBatchSize").setInt(null, 64);
+        } catch (Exception e) { /* ignore */ }
+        try {
+            Class<?> floodFillClass = Class.forName("com.hypixel.hytale.server.spawning.util.FloodFillPositionSelector");
+            floodFillClass.getField("$catalystFloodFillLimitEnabled").setBoolean(null, false);
+            floodFillClass.getField("$catalystFloodFillMaxIterations").setInt(null, 5000);
+        } catch (Exception e) { /* ignore */ }
+        try {
+            Class<?> astarClass = Class.forName("com.hypixel.hytale.server.npc.navigation.AStarBase");
+            astarClass.getField("$catalystPathfindingPoolEnabled").setBoolean(null, false);
+            astarClass.getField("$catalystPathfindingPoolSize").setInt(null, 512);
+        } catch (Exception e) { /* ignore */ }
+
+        // Update advanced UI elements
+        commandBuilder.set("#BlockEntitySleepCheckBox.Value", false);
+        commandBuilder.set("#BlockEntitySleepIntervalSlider.Value", 20);
+        commandBuilder.set("#StatRecalcThrottleCheckBox.Value", false);
+        commandBuilder.set("#StatRecalcIntervalSlider.Value", 5);
+        commandBuilder.set("#BlockUpdateBatchingCheckBox.Value", false);
+        commandBuilder.set("#BlockUpdateBatchSizeSlider.Value", 64);
+        commandBuilder.set("#FloodFillLimitCheckBox.Value", false);
+        commandBuilder.set("#FloodFillMaxIterationsSlider.Value", 5000);
+        commandBuilder.set("#PathfindingPoolCheckBox.Value", false);
+        commandBuilder.set("#PathfindingPoolSizeSlider.Value", 512);
     }
 
     /**
@@ -634,6 +1097,18 @@ public class CatalystSettingsGui extends InteractiveCustomUIPage<CatalystSetting
         static final String KEY_TOGGLE_BLOCK_SECTION_CACHE = "ToggleBlockSectionCache";
         static final String KEY_TOGGLE_BLOCK_TYPE_CACHE = "ToggleBlockTypeCache";
         static final String KEY_TOGGLE_LOCAL_CHUNK_CACHE = "ToggleLocalChunkCache";
+        static final String KEY_SWITCH_TAB_ADVANCED = "SwitchTabAdvanced";
+        static final String KEY_TOGGLE_BLOCK_ENTITY_SLEEP = "ToggleBlockEntitySleep";
+        static final String KEY_SET_BLOCK_ENTITY_SLEEP_INTERVAL = "@SetBlockEntitySleepInterval";
+        static final String KEY_TOGGLE_STAT_RECALC_THROTTLE = "ToggleStatRecalcThrottle";
+        static final String KEY_SET_STAT_RECALC_INTERVAL = "@SetStatRecalcInterval";
+        static final String KEY_TOGGLE_BLOCK_UPDATE_BATCHING = "ToggleBlockUpdateBatching";
+        static final String KEY_SET_BLOCK_UPDATE_BATCH_SIZE = "@SetBlockUpdateBatchSize";
+        static final String KEY_TOGGLE_FLOOD_FILL_LIMIT = "ToggleFloodFillLimit";
+        static final String KEY_SET_FLOOD_FILL_MAX_ITERATIONS = "@SetFloodFillMaxIterations";
+        static final String KEY_TOGGLE_PATHFINDING_POOL = "TogglePathfindingPool";
+        static final String KEY_SET_PATHFINDING_POOL_SIZE = "@SetPathfindingPoolSize";
+        static final String KEY_SEARCH_QUERY = "@SearchQuery";
 
         public static final BuilderCodec<GuiData> CODEC = BuilderCodec.builder(GuiData.class, GuiData::new)
                 .addField(new KeyedCodec<>(KEY_SET_ENTITY_DISTANCE, Codec.INTEGER),
@@ -670,6 +1145,30 @@ public class CatalystSettingsGui extends InteractiveCustomUIPage<CatalystSetting
                     (guiData, s) -> guiData.toggleBlockTypeCache = s, guiData -> guiData.toggleBlockTypeCache)
                 .addField(new KeyedCodec<>(KEY_TOGGLE_LOCAL_CHUNK_CACHE, Codec.STRING),
                     (guiData, s) -> guiData.toggleLocalChunkCache = s, guiData -> guiData.toggleLocalChunkCache)
+                .addField(new KeyedCodec<>(KEY_SWITCH_TAB_ADVANCED, Codec.STRING),
+                    (guiData, s) -> guiData.switchTabAdvanced = s, guiData -> guiData.switchTabAdvanced)
+                .addField(new KeyedCodec<>(KEY_TOGGLE_BLOCK_ENTITY_SLEEP, Codec.STRING),
+                    (guiData, s) -> guiData.toggleBlockEntitySleep = s, guiData -> guiData.toggleBlockEntitySleep)
+                .addField(new KeyedCodec<>(KEY_SET_BLOCK_ENTITY_SLEEP_INTERVAL, Codec.INTEGER),
+                    (guiData, i) -> guiData.blockEntitySleepIntervalValue = i, guiData -> guiData.blockEntitySleepIntervalValue)
+                .addField(new KeyedCodec<>(KEY_TOGGLE_STAT_RECALC_THROTTLE, Codec.STRING),
+                    (guiData, s) -> guiData.toggleStatRecalcThrottle = s, guiData -> guiData.toggleStatRecalcThrottle)
+                .addField(new KeyedCodec<>(KEY_SET_STAT_RECALC_INTERVAL, Codec.INTEGER),
+                    (guiData, i) -> guiData.statRecalcIntervalValue = i, guiData -> guiData.statRecalcIntervalValue)
+                .addField(new KeyedCodec<>(KEY_TOGGLE_BLOCK_UPDATE_BATCHING, Codec.STRING),
+                    (guiData, s) -> guiData.toggleBlockUpdateBatching = s, guiData -> guiData.toggleBlockUpdateBatching)
+                .addField(new KeyedCodec<>(KEY_SET_BLOCK_UPDATE_BATCH_SIZE, Codec.INTEGER),
+                    (guiData, i) -> guiData.blockUpdateBatchSizeValue = i, guiData -> guiData.blockUpdateBatchSizeValue)
+                .addField(new KeyedCodec<>(KEY_TOGGLE_FLOOD_FILL_LIMIT, Codec.STRING),
+                    (guiData, s) -> guiData.toggleFloodFillLimit = s, guiData -> guiData.toggleFloodFillLimit)
+                .addField(new KeyedCodec<>(KEY_SET_FLOOD_FILL_MAX_ITERATIONS, Codec.INTEGER),
+                    (guiData, i) -> guiData.floodFillMaxIterationsValue = i, guiData -> guiData.floodFillMaxIterationsValue)
+                .addField(new KeyedCodec<>(KEY_TOGGLE_PATHFINDING_POOL, Codec.STRING),
+                    (guiData, s) -> guiData.togglePathfindingPool = s, guiData -> guiData.togglePathfindingPool)
+                .addField(new KeyedCodec<>(KEY_SET_PATHFINDING_POOL_SIZE, Codec.INTEGER),
+                    (guiData, i) -> guiData.pathfindingPoolSizeValue = i, guiData -> guiData.pathfindingPoolSizeValue)
+                .addField(new KeyedCodec<>(KEY_SEARCH_QUERY, Codec.STRING),
+                    (guiData, s) -> guiData.searchQuery = s, guiData -> guiData.searchQuery)
                 .build();
 
         private Integer entityDistanceValue;
@@ -689,5 +1188,17 @@ public class CatalystSettingsGui extends InteractiveCustomUIPage<CatalystSetting
         private String toggleBlockSectionCache;
         private String toggleBlockTypeCache;
         private String toggleLocalChunkCache;
+        private String switchTabAdvanced;
+        private String toggleBlockEntitySleep;
+        private Integer blockEntitySleepIntervalValue;
+        private String toggleStatRecalcThrottle;
+        private Integer statRecalcIntervalValue;
+        private String toggleBlockUpdateBatching;
+        private Integer blockUpdateBatchSizeValue;
+        private String toggleFloodFillLimit;
+        private Integer floodFillMaxIterationsValue;
+        private String togglePathfindingPool;
+        private Integer pathfindingPoolSizeValue;
+        private String searchQuery;
     }
 }

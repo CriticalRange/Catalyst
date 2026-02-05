@@ -214,4 +214,89 @@ public class CatalystConfig {
      * <p>Expected impact: 5-10% faster chunk access during lighting calculations.</p>
      */
     public static volatile boolean LOCAL_CHUNK_CACHE_ENABLED = false;
+
+    // ========== Advanced Optimizations ==========
+
+    /**
+     * Enables skipping idle block entities during ticking.
+     * 
+     * <p>Block entities that haven't changed state (hoppers with no items to move,
+     * furnaces with no fuel, etc.) are marked as "sleeping" and skipped during
+     * tick processing. They wake up when their state changes.</p>
+     * 
+     * <p>Expected impact: 20-40% reduction in block entity tick time for idle worlds.</p>
+     */
+    public static volatile boolean BLOCK_ENTITY_SLEEP_ENABLED = false;
+
+    /**
+     * Minimum ticks between block entity wake checks.
+     * Lower = more responsive but more CPU. Higher = less CPU but slower reaction.
+     */
+    public static volatile int BLOCK_ENTITY_SLEEP_INTERVAL = 20;
+
+    /**
+     * Enables throttling of entity stat modifier recalculations.
+     * 
+     * <p>StatModifiersManager normally recalculates every tick when flagged.
+     * This optimization adds a minimum interval between recalculations,
+     * reducing CPU usage for entities with frequently changing stats.</p>
+     * 
+     * <p>Expected impact: 10-25% reduction in stat recalculation overhead.</p>
+     */
+    public static volatile boolean STAT_RECALC_THROTTLE_ENABLED = false;
+
+    /**
+     * Minimum ticks between stat modifier recalculations.
+     * Default: 5 ticks (250ms at 20 TPS).
+     */
+    public static volatile int STAT_RECALC_INTERVAL = 5;
+
+    /**
+     * Enables batching of block update notifications.
+     * 
+     * <p>Instead of sending individual packets for each block change,
+     * batches updates per chunk and sends them together at end of tick.
+     * Reduces packet overhead for bulk block operations.</p>
+     * 
+     * <p>Expected impact: 15-30% reduction in network packets for bulk operations.</p>
+     */
+    public static volatile boolean BLOCK_UPDATE_BATCHING_ENABLED = false;
+
+    /**
+     * Maximum updates to batch before forcing a flush.
+     * Prevents memory buildup during massive operations.
+     */
+    public static volatile int BLOCK_UPDATE_BATCH_SIZE = 64;
+
+    /**
+     * Enables flood fill depth limiting for spawn position selection.
+     * 
+     * <p>Limits how deep the flood fill algorithm searches when finding
+     * spawn positions. Prevents lag spikes in complex terrain.</p>
+     * 
+     * <p>Expected impact: Prevents spawn-related lag spikes in complex worlds.</p>
+     */
+    public static volatile boolean FLOOD_FILL_LIMIT_ENABLED = false;
+
+    /**
+     * Maximum flood fill iterations before stopping.
+     * Default: 5000. Lower = faster but may miss valid positions.
+     */
+    public static volatile int FLOOD_FILL_MAX_ITERATIONS = 5000;
+
+    /**
+     * Enables pathfinding memory pool optimization.
+     * 
+     * <p>Reuses AStarNode objects instead of allocating new ones for each
+     * pathfinding operation. Reduces GC pressure during heavy NPC activity.</p>
+     * 
+     * <p>Expected impact: 15-25% reduction in pathfinding allocations.</p>
+     */
+    public static volatile boolean PATHFINDING_POOL_ENABLED = false;
+
+    /**
+     * Size of the pathfinding node pool per thread.
+     * Larger = fewer allocations but more memory.
+     */
+    public static volatile int PATHFINDING_POOL_SIZE = 512;
 }

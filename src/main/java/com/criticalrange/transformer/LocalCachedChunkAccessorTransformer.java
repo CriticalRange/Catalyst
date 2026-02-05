@@ -20,7 +20,8 @@ public class LocalCachedChunkAccessorTransformer extends BaseTransformer {
     private static final String TARGET_CLASS_INTERNAL = "com/hypixel/hytale/server/core/universe/world/accessor/LocalCachedChunkAccessor";
     
     private static final String WORLD_CHUNK_CLASS = "com/hypixel/hytale/server/core/universe/world/chunk/WorldChunk";
-    private static final String CHUNK_ACCESSOR_CLASS = "com/hypixel/hytale/server/core/universe/world/accessor/IChunkAccessorSync";
+    private static final String CHUNK_ACCESSOR_CLASS = "com/hypixel/hytale/server/core/universe/world/accessor/ChunkAccessor";
+    private static final String ICHUNK_ACCESSOR_SYNC_CLASS = "com/hypixel/hytale/server/core/universe/world/accessor/IChunkAccessorSync";
 
     public static final String ENABLED_FIELD = "$catalystLocalChunkCacheEnabled";
     private static final String CACHED_INDEX_1 = "$catalystCachedChunkIndex1";
@@ -141,6 +142,7 @@ public class LocalCachedChunkAccessorTransformer extends BaseTransformer {
         LabelNode skipCache = new LabelNode();
         LabelNode checkSlot2 = new LabelNode();
         LabelNode cacheMiss = new LabelNode();
+        LabelNode cacheMissWithPop = new LabelNode();
         LabelNode outsideBounds = new LabelNode();
         LabelNode updateCache = new LabelNode();
         LabelNode fetchFromDelegate = new LabelNode();
@@ -166,6 +168,8 @@ public class LocalCachedChunkAccessorTransformer extends BaseTransformer {
         insns.add(new JumpInsnNode(Opcodes.IF_ICMPNE, checkSlot2));
         insns.add(new VarInsnNode(Opcodes.ALOAD, 0));
         insns.add(new FieldInsnNode(Opcodes.GETFIELD, TARGET_CLASS_INTERNAL, CACHED_CHUNK_1, "L" + WORLD_CHUNK_CLASS + ";"));
+        insns.add(new InsnNode(Opcodes.DUP));
+        insns.add(new JumpInsnNode(Opcodes.IFNULL, cacheMissWithPop));
         insns.add(new InsnNode(Opcodes.ARETURN));
 
         // Check slot 2
@@ -176,9 +180,15 @@ public class LocalCachedChunkAccessorTransformer extends BaseTransformer {
         insns.add(new JumpInsnNode(Opcodes.IF_ICMPNE, cacheMiss));
         insns.add(new VarInsnNode(Opcodes.ALOAD, 0));
         insns.add(new FieldInsnNode(Opcodes.GETFIELD, TARGET_CLASS_INTERNAL, CACHED_CHUNK_2, "L" + WORLD_CHUNK_CLASS + ";"));
+        insns.add(new InsnNode(Opcodes.DUP));
+        insns.add(new JumpInsnNode(Opcodes.IFNULL, cacheMissWithPop));
         insns.add(new InsnNode(Opcodes.ARETURN));
 
-        // Cache miss
+        // Cache miss with null on stack - pop it first
+        insns.add(cacheMissWithPop);
+        insns.add(new InsnNode(Opcodes.POP));
+
+        // Cache miss - stack is clean here
         insns.add(cacheMiss);
 
         // xOffset = x - minX
@@ -238,7 +248,8 @@ public class LocalCachedChunkAccessorTransformer extends BaseTransformer {
         insns.add(new VarInsnNode(Opcodes.ILOAD, 1));
         insns.add(new VarInsnNode(Opcodes.ILOAD, 2));
         insns.add(new MethodInsnNode(Opcodes.INVOKESTATIC, "com/hypixel/hytale/math/util/ChunkUtil", "indexChunk", "(II)J", false));
-        insns.add(new MethodInsnNode(Opcodes.INVOKEINTERFACE, CHUNK_ACCESSOR_CLASS, "getChunkIfInMemory", "(J)L" + WORLD_CHUNK_CLASS + ";", true));
+        insns.add(new MethodInsnNode(Opcodes.INVOKEINTERFACE, ICHUNK_ACCESSOR_SYNC_CLASS, "getChunkIfInMemory", "(J)Lcom/hypixel/hytale/server/core/universe/world/accessor/BlockAccessor;", true));
+        insns.add(new TypeInsnNode(Opcodes.CHECKCAST, WORLD_CHUNK_CLASS));
         insns.add(new InsnNode(Opcodes.DUP_X2));
         insns.add(new InsnNode(Opcodes.AASTORE));
         insns.add(new VarInsnNode(Opcodes.ASTORE, 7));
@@ -251,7 +262,8 @@ public class LocalCachedChunkAccessorTransformer extends BaseTransformer {
         insns.add(new VarInsnNode(Opcodes.ILOAD, 1));
         insns.add(new VarInsnNode(Opcodes.ILOAD, 2));
         insns.add(new MethodInsnNode(Opcodes.INVOKESTATIC, "com/hypixel/hytale/math/util/ChunkUtil", "indexChunk", "(II)J", false));
-        insns.add(new MethodInsnNode(Opcodes.INVOKEINTERFACE, CHUNK_ACCESSOR_CLASS, "getChunkIfInMemory", "(J)L" + WORLD_CHUNK_CLASS + ";", true));
+        insns.add(new MethodInsnNode(Opcodes.INVOKEINTERFACE, ICHUNK_ACCESSOR_SYNC_CLASS, "getChunkIfInMemory", "(J)Lcom/hypixel/hytale/server/core/universe/world/accessor/BlockAccessor;", true));
+        insns.add(new TypeInsnNode(Opcodes.CHECKCAST, WORLD_CHUNK_CLASS));
         insns.add(new VarInsnNode(Opcodes.ASTORE, 7));
 
         // Update cache
@@ -332,7 +344,8 @@ public class LocalCachedChunkAccessorTransformer extends BaseTransformer {
         insns.add(new VarInsnNode(Opcodes.ILOAD, 1));
         insns.add(new VarInsnNode(Opcodes.ILOAD, 2));
         insns.add(new MethodInsnNode(Opcodes.INVOKESTATIC, "com/hypixel/hytale/math/util/ChunkUtil", "indexChunk", "(II)J", false));
-        insns.add(new MethodInsnNode(Opcodes.INVOKEINTERFACE, CHUNK_ACCESSOR_CLASS, "getChunkIfInMemory", "(J)L" + WORLD_CHUNK_CLASS + ";", true));
+        insns.add(new MethodInsnNode(Opcodes.INVOKEINTERFACE, ICHUNK_ACCESSOR_SYNC_CLASS, "getChunkIfInMemory", "(J)Lcom/hypixel/hytale/server/core/universe/world/accessor/BlockAccessor;", true));
+        insns.add(new TypeInsnNode(Opcodes.CHECKCAST, WORLD_CHUNK_CLASS));
         insns.add(new InsnNode(Opcodes.DUP_X2));
         insns.add(new InsnNode(Opcodes.AASTORE));
         insns.add(new InsnNode(Opcodes.ARETURN));
@@ -348,7 +361,8 @@ public class LocalCachedChunkAccessorTransformer extends BaseTransformer {
         insns.add(new VarInsnNode(Opcodes.ILOAD, 1));
         insns.add(new VarInsnNode(Opcodes.ILOAD, 2));
         insns.add(new MethodInsnNode(Opcodes.INVOKESTATIC, "com/hypixel/hytale/math/util/ChunkUtil", "indexChunk", "(II)J", false));
-        insns.add(new MethodInsnNode(Opcodes.INVOKEINTERFACE, CHUNK_ACCESSOR_CLASS, "getChunkIfInMemory", "(J)L" + WORLD_CHUNK_CLASS + ";", true));
+        insns.add(new MethodInsnNode(Opcodes.INVOKEINTERFACE, ICHUNK_ACCESSOR_SYNC_CLASS, "getChunkIfInMemory", "(J)Lcom/hypixel/hytale/server/core/universe/world/accessor/BlockAccessor;", true));
+        insns.add(new TypeInsnNode(Opcodes.CHECKCAST, WORLD_CHUNK_CLASS));
         insns.add(new InsnNode(Opcodes.ARETURN));
 
         targetMethod.instructions = insns;

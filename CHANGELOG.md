@@ -2,6 +2,19 @@
 
 All notable changes to Catalyst will be documented in this file.
 
+## [0.2.3] - 2026-02-04
+
+### Fixed
+- **Field Sync Consistency**: Fixed missing field syncs in `Catalyst.syncConfigToInjectedFields()` for visual effects and BlockType cache settings
+- **Visual Effects Toggle**: Fixed particle and animation toggles not syncing to injected Hytale class fields at runtime
+- **Bytecode Generation**: Fixed `initStaticInt()` bug that generated incorrect bytecode for value -1 (now correctly uses `ICONST_M1`)
+- **BlockType Cache**: Fixed cache never being populated on miss - now properly stores results before returning
+
+### Changed
+- **Code Quality**: Replaced hardcoded magic numbers with constants from `CatalystConfig` in reset-to-defaults logic
+- **Documentation**: Improved comment clarity in `FloodLightCalculationTransformer` for parameter index calculation
+- **Cleanup**: Removed unused `ldcCount` field in `ChunkGeneratorTransformer`
+
 ## [0.2.2] - 2026-01-26
 
 ### Fixed

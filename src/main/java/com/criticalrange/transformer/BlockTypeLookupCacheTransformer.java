@@ -193,6 +193,7 @@ public class BlockTypeLookupCacheTransformer extends BaseTransformer {
      * - At ARETURN: store result in cache before returning
      * 
      * Uses local variable 2 for slot index (calculated once at start).
+     * IMPORTANT: Local var 2 must be initialized on ALL paths to avoid VerifyError.
      */
     private static class GetAssetMethodVisitor extends MethodVisitor {
         private boolean cacheCheckInjected = false;
@@ -205,14 +206,19 @@ public class BlockTypeLookupCacheTransformer extends BaseTransformer {
         public void visitCode() {
             super.visitCode();
             
-            Label skipCache = new Label();
             Label initCache = new Label();
             Label cacheReady = new Label();
             Label cacheMiss = new Label();
+            Label continueMethod = new Label();
+            
+            // CRITICAL: Initialize local var 2 to -1 at the very start
+            // This ensures it's defined on ALL code paths
+            mv.visitInsn(Opcodes.ICONST_M1);
+            mv.visitVarInsn(Opcodes.ISTORE, 2);
             
             // Check if enabled
             mv.visitFieldInsn(Opcodes.GETSTATIC, TARGET_CLASS_INTERNAL, ENABLED_FIELD, "Z");
-            mv.visitJumpInsn(Opcodes.IFEQ, skipCache);
+            mv.visitJumpInsn(Opcodes.IFEQ, continueMethod);
             
             // Check if cache needs initialization
             mv.visitVarInsn(Opcodes.ALOAD, 0);
@@ -266,10 +272,11 @@ public class BlockTypeLookupCacheTransformer extends BaseTransformer {
             mv.visitInsn(Opcodes.ARETURN);
             
             mv.visitLabel(cacheMiss);
-            mv.visitLabel(skipCache);
+            // Fall through to original method with slot set
             
-            // For skipCache path, we need to initialize slot to -1 so we don't try to cache
-            // Actually, we'll check enabled again at return time
+            mv.visitLabel(continueMethod);
+            // Continue with original method - slot is -1 if cache disabled, valid otherwise
+            
             cacheCheckInjected = true;
         }
         
@@ -286,10 +293,21 @@ public class BlockTypeLookupCacheTransformer extends BaseTransformer {
                 mv.visitFieldInsn(Opcodes.GETSTATIC, TARGET_CLASS_INTERNAL, ENABLED_FIELD, "Z");
                 mv.visitJumpInsn(Opcodes.IFEQ, skipCacheStore);
                 
-                // Check if cache exists (it should if we got here via cache miss path)
+                // Check if slot is valid (>= 0)
+                mv.visitVarInsn(Opcodes.ILOAD, 2);
+                mv.visitJumpInsn(Opcodes.IFLT, skipCacheStore);
+                
+                // Check if cache exists
                 mv.visitVarInsn(Opcodes.ALOAD, 0);
                 mv.visitFieldInsn(Opcodes.GETFIELD, TARGET_CLASS_INTERNAL, CACHE_IDS_FIELD, "[I");
                 mv.visitJumpInsn(Opcodes.IFNULL, skipCacheStore);
+                
+                // Check if slot is within bounds
+                mv.visitVarInsn(Opcodes.ILOAD, 2);
+                mv.visitVarInsn(Opcodes.ALOAD, 0);
+                mv.visitFieldInsn(Opcodes.GETFIELD, TARGET_CLASS_INTERNAL, CACHE_IDS_FIELD, "[I");
+                mv.visitInsn(Opcodes.ARRAYLENGTH);
+                mv.visitJumpInsn(Opcodes.IF_ICMPGE, skipCacheStore);
                 
                 // Stack: result
                 // Duplicate result for return later

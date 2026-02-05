@@ -23,7 +23,7 @@ $C.@PageOverlay {
         TextButton #TabGeneral {
           Text: "General";
           TooltipText: "Runtime and chunk generation settings";
-          Anchor: (Width: 160, Height: 40);
+          Anchor: (Width: 120, Height: 40);
           Background: #2d3444;
           Style: (
             Default: (LabelStyle: (FontSize: 14, TextColor: #ffffff, VerticalAlignment: Center, HorizontalAlignment: Center, RenderUppercase: true, RenderBold: true)),
@@ -35,7 +35,7 @@ $C.@PageOverlay {
         TextButton #TabLighting {
           Text: "Lighting";
           TooltipText: "Light propagation optimizations";
-          Anchor: (Width: 160, Height: 40);
+          Anchor: (Width: 120, Height: 40);
           Background: #1a1d26;
           Style: (
             Default: (LabelStyle: (FontSize: 14, TextColor: #96a9be, VerticalAlignment: Center, HorizontalAlignment: Center, RenderUppercase: true, RenderBold: true)),
@@ -47,7 +47,7 @@ $C.@PageOverlay {
         TextButton #TabPathfinding {
           Text: "Pathfinding";
           TooltipText: "NPC pathfinding algorithm limits";
-          Anchor: (Width: 160, Height: 40);
+          Anchor: (Width: 120, Height: 40);
           Background: #1a1d26;
           Style: (
             Default: (LabelStyle: (FontSize: 14, TextColor: #96a9be, VerticalAlignment: Center, HorizontalAlignment: Center, RenderUppercase: true, RenderBold: true)),
@@ -59,12 +59,44 @@ $C.@PageOverlay {
         TextButton #TabVisual {
           Text: "Visual";
           TooltipText: "Particle and animation toggles";
-          Anchor: (Width: 160, Height: 40);
+          Anchor: (Width: 120, Height: 40);
           Background: #1a1d26;
           Style: (
             Default: (LabelStyle: (FontSize: 14, TextColor: #96a9be, VerticalAlignment: Center, HorizontalAlignment: Center, RenderUppercase: true, RenderBold: true)),
             Hovered: (LabelStyle: (FontSize: 14, TextColor: #ffffff, VerticalAlignment: Center, HorizontalAlignment: Center, RenderUppercase: true, RenderBold: true)),
             Pressed: (LabelStyle: (FontSize: 14, TextColor: #ffffff, VerticalAlignment: Center, HorizontalAlignment: Center, RenderUppercase: true, RenderBold: true))
+          );
+        }
+
+        TextButton #TabAdvanced {
+          Text: "Advanced";
+          TooltipText: "Advanced performance optimizations";
+          Anchor: (Width: 120, Height: 40);
+          Background: #1a1d26;
+          Style: (
+            Default: (LabelStyle: (FontSize: 14, TextColor: #96a9be, VerticalAlignment: Center, HorizontalAlignment: Center, RenderUppercase: true, RenderBold: true)),
+            Hovered: (LabelStyle: (FontSize: 14, TextColor: #ffffff, VerticalAlignment: Center, HorizontalAlignment: Center, RenderUppercase: true, RenderBold: true)),
+            Pressed: (LabelStyle: (FontSize: 14, TextColor: #ffffff, VerticalAlignment: Center, HorizontalAlignment: Center, RenderUppercase: true, RenderBold: true))
+          );
+        }
+
+        // Spacer to push search to the right
+        Group { FlexWeight: 1; Background: #12151c; }
+
+        // Search in tab bar - fixed 200px always expanded
+        CompactTextField #SearchInput {
+          Anchor: (Width: 200, Height: 30, Top: 5);
+          CollapsedWidth: 200;
+          ExpandedWidth: 200;
+          PlaceholderText: "Search...";
+          Style: (FontSize: 14, TextColor: #ffffff);
+          PlaceholderStyle: (TextColor: #5a6a7a, FontSize: 12);
+          Padding: (Horizontal: 10, Left: 30);
+          Decoration: (
+            Default: (
+              Icon: (Texture: "../Common/SearchIcon.png", Width: 14, Height: 14, Offset: 8),
+              ClearButtonStyle: $C.@ClearButtonStyle
+            )
           );
         }
       }
@@ -75,10 +107,30 @@ $C.@PageOverlay {
         Anchor: (Height: 3);
         Background: #12151c;
 
-        Group #IndicatorGeneral { Anchor: (Width: 160, Height: 3); Background: #55aaff; }
-        Group #IndicatorLighting { Anchor: (Width: 160, Height: 3); Background: #12151c; }
-        Group #IndicatorPathfinding { Anchor: (Width: 160, Height: 3); Background: #12151c; }
-        Group #IndicatorVisual { Anchor: (Width: 160, Height: 3); Background: #12151c; }
+        Group #IndicatorGeneral { Anchor: (Width: 120, Height: 3); Background: #55aaff; }
+        Group #IndicatorLighting { Anchor: (Width: 120, Height: 3); Background: #12151c; }
+        Group #IndicatorPathfinding { Anchor: (Width: 120, Height: 3); Background: #12151c; }
+        Group #IndicatorVisual { Anchor: (Width: 120, Height: 3); Background: #12151c; }
+        Group #IndicatorAdvanced { Anchor: (Width: 120, Height: 3); Background: #12151c; }
+      }
+
+      // ===== SEARCH RESULTS PANEL =====
+      Group #PanelSearch {
+        LayoutMode: Top;
+        FlexWeight: 1;
+        Padding: (Top: 8, Left: 10, Right: 10, Bottom: 10);
+        Visible: false;
+
+        Label #SearchResultsLabel { Style: (FontSize: 14, TextColor: #55aaff, RenderBold: true, RenderUppercase: true); Text: "Search Results"; Padding: (Bottom: 8); }
+
+        Label #NoResultsLabel { Style: (FontSize: 14, TextColor: #5a6a7a); Text: "No settings found matching your search."; Visible: false; }
+
+        // Dynamic search results container - items appended here with indexed selectors
+        Group #SearchResultsList {
+          LayoutMode: TopScrolling;
+          FlexWeight: 1;
+          ScrollbarStyle: $C.@DefaultScrollbarStyle;
+        }
       }
 
       // ===== PANELS CONTAINER =====
@@ -107,17 +159,17 @@ $C.@PageOverlay {
 
         Group #BlockSectionCacheToggle { Anchor: (Height: 44, Bottom: 4); Background: #1a1d26; LayoutMode: Left; Padding: (Left: 16, Right: 16); TooltipText: "Cache last accessed BlockSection for faster Y-iteration patterns (5-15% faster block access)";
           Label { Style: (VerticalAlignment: Center, TextColor: #96a9be, FontSize: 15); Text: "Block Section Cache"; FlexWeight: 1; }
-          CheckBox #BlockSectionCacheCheckBox { Anchor: (Width: 24, Height: 24); Style: $C.@DefaultCheckBoxStyle; }
+          $C.@CheckBox #BlockSectionCacheCheckBox { Value: false; }
         }
 
         Group #BlockTypeCacheToggle { Anchor: (Height: 44, Bottom: 4); Background: #1a1d26; LayoutMode: Left; Padding: (Left: 16, Right: 16); TooltipText: "Cache BlockType lookups by block ID for faster collision/lighting (10-20% faster lookups)";
           Label { Style: (VerticalAlignment: Center, TextColor: #96a9be, FontSize: 15); Text: "Block Type Cache"; FlexWeight: 1; }
-          CheckBox #BlockTypeCacheCheckBox { Anchor: (Width: 24, Height: 24); Style: $C.@DefaultCheckBoxStyle; }
+          $C.@CheckBox #BlockTypeCacheCheckBox { Value: false; }
         }
 
         Group #LocalChunkCacheToggle { Anchor: (Height: 44, Bottom: 4); Background: #1a1d26; LayoutMode: Left; Padding: (Left: 16, Right: 16); TooltipText: "Cache last 2 accessed chunks during lighting calculations (5-10% faster lighting)";
           Label { Style: (VerticalAlignment: Center, TextColor: #96a9be, FontSize: 15); Text: "Local Chunk Cache"; FlexWeight: 1; }
-          CheckBox #LocalChunkCacheCheckBox { Anchor: (Width: 24, Height: 24); Style: $C.@DefaultCheckBoxStyle; }
+          $C.@CheckBox #LocalChunkCacheCheckBox { Value: false; }
         }
 
         // Chunk Generation Section
@@ -140,7 +192,7 @@ $C.@PageOverlay {
 
         Group #SkipEmptySectionsToggle { Anchor: (Height: 44, Bottom: 4); Background: #1a1d26; LayoutMode: Left; Padding: (Left: 16, Right: 16); TooltipText: "Skip processing empty air sections with no light data. Reduces CPU usage.";
           Label { Style: (VerticalAlignment: Center, TextColor: #96a9be, FontSize: 15); Text: "Skip Empty Sections"; FlexWeight: 1; }
-          CheckBox #SkipEmptyCheckBox { Anchor: (Width: 24, Height: 24); Style: $C.@DefaultCheckBoxStyle; }
+          $C.@CheckBox #SkipEmptyCheckBox { Value: false; }
         }
         }
 
@@ -180,12 +232,80 @@ $C.@PageOverlay {
 
         Group #ParticlesToggle { Anchor: (Height: 44, Bottom: 4); Background: #1a1d26; LayoutMode: Left; Padding: (Left: 16, Right: 16); TooltipText: "Enable or disable particle effects for better performance";
           Label { Style: (VerticalAlignment: Center, TextColor: #96a9be, FontSize: 15); Text: "Particle Effects"; FlexWeight: 1; }
-          CheckBox #CheckBox { Anchor: (Width: 24, Height: 24); Style: $C.@DefaultCheckBoxStyle; }
+          $C.@CheckBox #CheckBox { Value: false; }
         }
 
         Group #AnimationsToggle { Anchor: (Height: 44, Bottom: 4); Background: #1a1d26; LayoutMode: Left; Padding: (Left: 16, Right: 16); TooltipText: "Enable or disable NPC animations for better performance";
           Label { Style: (VerticalAlignment: Center, TextColor: #96a9be, FontSize: 15); Text: "NPC Animations"; FlexWeight: 1; }
-          CheckBox #CheckBox { Anchor: (Width: 24, Height: 24); Style: $C.@DefaultCheckBoxStyle; }
+          $C.@CheckBox #CheckBox { Value: false; }
+        }
+        }
+
+        // ===== ADVANCED TAB =====
+        Group #PanelAdvanced {
+          LayoutMode: TopScrolling;
+          Anchor: (Full: 0);
+        ScrollbarStyle: $C.@DefaultScrollbarStyle;
+        Visible: false;
+
+        Label { Style: (FontSize: 14, TextColor: #55aaff, RenderBold: true, RenderUppercase: true); Text: "Block Entity Optimizations"; Padding: (Bottom: 8); }
+
+        Group #BlockEntitySleepToggle { Anchor: (Height: 44, Bottom: 4); Background: #1a1d26; LayoutMode: Left; Padding: (Left: 16, Right: 16); TooltipText: "Skip ticking idle block entities that haven't changed recently";
+          Label { Style: (VerticalAlignment: Center, TextColor: #96a9be, FontSize: 15); Text: "Skip Idle Block Entities"; FlexWeight: 1; }
+          $C.@CheckBox #BlockEntitySleepCheckBox { Value: false; }
+        }
+
+        Group { Anchor: (Height: 44, Bottom: 4); Background: #1a1d26; LayoutMode: Left; Padding: (Left: 16, Right: 16); TooltipText: "Ticks before a block entity is considered idle (5-100)";
+          Label { Style: (VerticalAlignment: Center, TextColor: #96a9be, FontSize: 15); Text: "Sleep Interval (ticks)"; Anchor: (Width: 200); }
+          SliderNumberField #BlockEntitySleepIntervalSlider { Anchor: (Width: 250, Height: 5); SliderStyle: $C.@DefaultSliderStyle; NumberFieldStyle: $C.@DefaultInputFieldStyle; Min: 1; Max: 100; }
+        }
+
+        Label { Style: (FontSize: 14, TextColor: #55aaff, RenderBold: true, RenderUppercase: true); Text: "Entity Stats"; Padding: (Top: 16, Bottom: 8); }
+
+        Group #StatRecalcThrottleToggle { Anchor: (Height: 44, Bottom: 4); Background: #1a1d26; LayoutMode: Left; Padding: (Left: 16, Right: 16); TooltipText: "Throttle stat modifier recalculations to reduce CPU usage";
+          Label { Style: (VerticalAlignment: Center, TextColor: #96a9be, FontSize: 15); Text: "Throttle Stat Recalc"; FlexWeight: 1; }
+          $C.@CheckBox #StatRecalcThrottleCheckBox { Value: false; }
+        }
+
+        Group { Anchor: (Height: 44, Bottom: 4); Background: #1a1d26; LayoutMode: Left; Padding: (Left: 16, Right: 16); TooltipText: "Minimum ticks between stat recalculations (1-20)";
+          Label { Style: (VerticalAlignment: Center, TextColor: #96a9be, FontSize: 15); Text: "Recalc Interval (ticks)"; Anchor: (Width: 200); }
+          SliderNumberField #StatRecalcIntervalSlider { Anchor: (Width: 250, Height: 5); SliderStyle: $C.@DefaultSliderStyle; NumberFieldStyle: $C.@DefaultInputFieldStyle; Min: 1; Max: 40; }
+        }
+
+        Label { Style: (FontSize: 14, TextColor: #55aaff, RenderBold: true, RenderUppercase: true); Text: "World Updates"; Padding: (Top: 16, Bottom: 8); }
+
+        Group #NotificationBatchToggle { Anchor: (Height: 44, Bottom: 4); Background: #1a1d26; LayoutMode: Left; Padding: (Left: 16, Right: 16); TooltipText: "Batch block update notifications to reduce network traffic";
+          Label { Style: (VerticalAlignment: Center, TextColor: #96a9be, FontSize: 15); Text: "Batch Notifications"; FlexWeight: 1; }
+          $C.@CheckBox #BlockUpdateBatchingCheckBox { Value: false; }
+        }
+
+        Group { Anchor: (Height: 44, Bottom: 4); Background: #1a1d26; LayoutMode: Left; Padding: (Left: 16, Right: 16); TooltipText: "Maximum notifications per batch (10-100)";
+          Label { Style: (VerticalAlignment: Center, TextColor: #96a9be, FontSize: 15); Text: "Batch Size"; Anchor: (Width: 200); }
+          SliderNumberField #BlockUpdateBatchSizeSlider { Anchor: (Width: 250, Height: 5); SliderStyle: $C.@DefaultSliderStyle; NumberFieldStyle: $C.@DefaultInputFieldStyle; Min: 16; Max: 256; }
+        }
+
+        Label { Style: (FontSize: 14, TextColor: #55aaff, RenderBold: true, RenderUppercase: true); Text: "Spawning"; Padding: (Top: 16, Bottom: 8); }
+
+        Group #FloodFillLimitToggle { Anchor: (Height: 44, Bottom: 4); Background: #1a1d26; LayoutMode: Left; Padding: (Left: 16, Right: 16); TooltipText: "Limit flood fill depth during spawn position selection";
+          Label { Style: (VerticalAlignment: Center, TextColor: #96a9be, FontSize: 15); Text: "Limit Flood Fill"; FlexWeight: 1; }
+          $C.@CheckBox #FloodFillLimitCheckBox { Value: false; }
+        }
+
+        Group { Anchor: (Height: 44, Bottom: 4); Background: #1a1d26; LayoutMode: Left; Padding: (Left: 16, Right: 16); TooltipText: "Maximum flood fill depth (50-500)";
+          Label { Style: (VerticalAlignment: Center, TextColor: #96a9be, FontSize: 15); Text: "Max Flood Fill Depth"; Anchor: (Width: 200); }
+          SliderNumberField #FloodFillMaxIterationsSlider { Anchor: (Width: 250, Height: 5); SliderStyle: $C.@DefaultSliderStyle; NumberFieldStyle: $C.@DefaultInputFieldStyle; Min: 1000; Max: 20000; }
+        }
+
+        Label { Style: (FontSize: 14, TextColor: #55aaff, RenderBold: true, RenderUppercase: true); Text: "Pathfinding"; Padding: (Top: 16, Bottom: 8); }
+
+        Group #PathfindingPoolToggle { Anchor: (Height: 44, Bottom: 4); Background: #1a1d26; LayoutMode: Left; Padding: (Left: 16, Right: 16); TooltipText: "Pool pathfinding node objects to reduce garbage collection";
+          Label { Style: (VerticalAlignment: Center, TextColor: #96a9be, FontSize: 15); Text: "Pathfinding Node Pool"; FlexWeight: 1; }
+          $C.@CheckBox #PathfindingPoolCheckBox { Value: false; }
+        }
+
+        Group { Anchor: (Height: 44, Bottom: 4); Background: #1a1d26; LayoutMode: Left; Padding: (Left: 16, Right: 16); TooltipText: "Size of the pathfinding node pool (128-2048)";
+          Label { Style: (VerticalAlignment: Center, TextColor: #96a9be, FontSize: 15); Text: "Pool Size"; Anchor: (Width: 200); }
+          SliderNumberField #PathfindingPoolSizeSlider { Anchor: (Width: 250, Height: 5); SliderStyle: $C.@DefaultSliderStyle; NumberFieldStyle: $C.@DefaultInputFieldStyle; Min: 128; Max: 2048; }
         }
         }
 
