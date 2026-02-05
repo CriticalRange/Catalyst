@@ -2,18 +2,30 @@
 
 All notable changes to Catalyst will be documented in this file.
 
-## [0.2.3] - 2026-02-04
+## [0.2.3] - 2026-02-05
+
+### Added
+- **Search Functionality**: Added comprehensive search bar to settings GUI with real-time filtering
+  - Search across all settings with keyword matching
+  - Dynamic UI generation for search results with interactive controls
+  - Clear search when switching tabs
+- **UI Components**: Created reusable search result templates for checkboxes and sliders
 
 ### Fixed
 - **Field Sync Consistency**: Fixed missing field syncs in `Catalyst.syncConfigToInjectedFields()` for visual effects and BlockType cache settings
 - **Visual Effects Toggle**: Fixed particle and animation toggles not syncing to injected Hytale class fields at runtime
 - **Bytecode Generation**: Fixed `initStaticInt()` bug that generated incorrect bytecode for value -1 (now correctly uses `ICONST_M1`)
 - **BlockType Cache**: Fixed cache never being populated on miss - now properly stores results before returning
+- **Search Results Display**: Fixed search results list visibility and proper clearing between searches
 
 ### Changed
 - **Code Quality**: Replaced hardcoded magic numbers with constants from `CatalystConfig` in reset-to-defaults logic
 - **Documentation**: Improved comment clarity in `FloodLightCalculationTransformer` for parameter index calculation
 - **Cleanup**: Removed unused `ldcCount` field in `ChunkGeneratorTransformer`
+- **Search Architecture**: Refactored search system to use indexed selectors for dynamic UI elements
+- **README Style**: Adopted clean emoji-based headers like create-go-app/cli for better readability
+- **Installation Instructions**: Updated to reflect both early-plugins and mods folder requirements
+- **Command System**: Simplified main command to `/catalyst` instead of `/catalyst menu`
 
 ## [0.2.2] - 2026-01-26
 
